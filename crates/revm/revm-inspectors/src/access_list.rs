@@ -71,6 +71,8 @@ where
             opcode::SLOAD | opcode::SSTORE => {
                 if let Ok(slot) = interpreter.stack().peek(0) {
                     let cur_contract = interpreter.contract.address;
+                    println!(interpreter.current_opcode());
+                    println!("access_list step sload!!!");
                     self.access_list
                         .entry(cur_contract)
                         .or_default()
@@ -100,6 +102,7 @@ where
             _ => (),
         }
 
+        print!("access_list step");
         InstructionResult::Continue
     }
 }
