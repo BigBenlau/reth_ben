@@ -314,7 +314,7 @@ impl<'a> EVMProcessor<'a> {
             // println!("{}, {}", result, state);
             info!(
                 target: "evm",
-                ?transaction, ?result, ?state,
+                ?transaction, ?state,
                 "Executed transaction"
             );
             trace!(
