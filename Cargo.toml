@@ -103,8 +103,8 @@ reth-eth-wire = { path = "./crates/net/eth-wire" }
 reth-ecies = { path = "./crates/net/ecies" }
 
 # revm
-revm = { git = "https://github.com/BigBenlau/revm_ben", rev = "516f62cc" }
-revm-primitives = { git = "https://github.com/BigBenlau/revm_ben", rev = "516f62cc" }
+revm = { git = "https://github.com/BigBenlau/revm_ben", rev = "b99b5327" }
+revm-primitives = { git = "https://github.com/BigBenlau/revm_ben", rev = "b99b5327" }
 
 ## eth
 ethers-core = { version = "2.0", default-features = false }
