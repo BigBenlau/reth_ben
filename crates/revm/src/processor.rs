@@ -253,6 +253,7 @@ impl<'a> EVMProcessor<'a> {
         let out = if self.stack.should_inspect(&self.evm.env, hash) {
             // execution with inspector.
             let output = self.evm.inspect(&mut self.stack);
+            println!("processor transact.inspect. Hash: {}", hash);
             tracing::trace!(
                 target: "evm",
                 ?hash, ?output, ?transaction, env = ?self.evm.env,
@@ -261,6 +262,7 @@ impl<'a> EVMProcessor<'a> {
             output
         } else {
             // main execution.
+            println!("processor transact.transact. Hash: {}", hash);
             self.evm.transact()
         };
         out.map_err(|e| BlockValidationError::EVM { hash, message: format!("{e:?}") }.into())
