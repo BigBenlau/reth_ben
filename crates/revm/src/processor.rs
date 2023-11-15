@@ -247,6 +247,8 @@ impl<'a> EVMProcessor<'a> {
         // Fill revm structure.
         fill_tx_env(&mut self.evm.env.tx, transaction, sender);
 
+
+        println!("In processor transact!!!");
         let hash = transaction.hash();
         let out = if self.stack.should_inspect(&self.evm.env, hash) {
             // execution with inspector.
@@ -286,6 +288,8 @@ impl<'a> EVMProcessor<'a> {
         if block.body.is_empty() {
             return Ok((Vec::new(), 0))
         }
+
+        println!("In processor execute transactions!!!");
 
         let senders = self.recover_senders(&block.body, senders)?;
 
