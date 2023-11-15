@@ -25,7 +25,7 @@ use revm::{
     DatabaseCommit, State, EVM,
 };
 use std::{sync::Arc, time::Instant};
-use tracing::{debug, trace};
+use tracing::{debug, trace, info};
 
 /// EVMProcessor is a block executor that uses revm to execute blocks or multiple blocks.
 ///
@@ -312,6 +312,11 @@ impl<'a> EVMProcessor<'a> {
             // Execute transaction.
             let ResultAndState { result, state } = self.transact(transaction, sender)?;
             // println!("{}, {}", result, state);
+            info!(
+                target: "evm",
+                ?transaction, ?result, ?state,
+                "Executed transaction"
+            );
             trace!(
                 target: "evm",
                 ?transaction, ?result, ?state,
