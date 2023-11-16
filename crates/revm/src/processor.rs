@@ -100,6 +100,7 @@ impl<'a> EVMProcessor<'a> {
         chain_spec: Arc<ChainSpec>,
         db: StateProviderDatabase<DB>,
     ) -> Self {
+        println!("reth processor new_with_db");
         let state = State::builder()
             .with_database_boxed(Box::new(db))
             .with_bundle_update()
