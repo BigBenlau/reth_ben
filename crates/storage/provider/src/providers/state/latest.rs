@@ -68,6 +68,7 @@ impl<'a, 'b, TX: DbTx<'a>> StateRootProvider for LatestStateProviderRef<'a, 'b, 
 
 impl<'a, 'b, TX: DbTx<'a>> StateProvider for LatestStateProviderRef<'a, 'b, TX> {
     /// Get storage.
+    println!("reth db provider latest storage!!!!!");
     fn storage(
         &self,
         account: Address,
