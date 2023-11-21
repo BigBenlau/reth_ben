@@ -73,7 +73,7 @@ impl<'a, 'b, TX: DbTx<'a>> StateProvider for LatestStateProviderRef<'a, 'b, TX> 
         account: Address,
         storage_key: StorageKey,
     ) -> RethResult<Option<StorageValue>> {
-        println!("reth db provider latest storage!!!!!");
+        println!("reth db provider latest storage!!!!! account: {}, key: {}", account, storage_key);
         let mut cursor = self.db.cursor_dup_read::<tables::PlainStorageState>()?;
         if let Some(entry) = cursor.seek_by_key_subkey(account, storage_key)? {
             if entry.key == storage_key {
