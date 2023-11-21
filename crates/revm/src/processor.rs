@@ -398,6 +398,7 @@ impl<'a> EVMProcessor<'a> {
         } else {
             BundleRetention::PlainState
         };
+        println!("reth processor start merge_transitions");
         self.db_mut().merge_transitions(retention);
         self.stats.merge_transitions_duration += time.elapsed();
 

@@ -72,6 +72,7 @@ impl AppendableChain {
         C: Consensus,
         EF: ExecutorFactory,
     {
+        println!("Reth chain new_canonical_head_fork!!!");
         let state = BundleStateWithReceipts::default();
         let empty = BTreeMap::new();
 
@@ -237,6 +238,7 @@ impl AppendableChain {
         C: Consensus,
         EF: ExecutorFactory,
     {
+        println!("Reth chain validate canonical chain!!");
         Self::validate_and_execute(
             block,
             parent_block,
