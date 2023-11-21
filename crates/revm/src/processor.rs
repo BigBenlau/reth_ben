@@ -312,12 +312,11 @@ impl<'a> EVMProcessor<'a> {
             }
             // Execute transaction.
             let ResultAndState { result, state } = self.transact(transaction, sender)?;
-            // println!("{}, {}", result, state);
-            info!(
-                target: "evm",
-                ?transaction, ?state,
-                "Executed transaction"
-            );
+            // info!(
+            //     target: "evm",
+            //     ?transaction, ?state,
+            //     "Executed transaction"
+            // );
             trace!(
                 target: "evm",
                 ?transaction, ?result, ?state,
