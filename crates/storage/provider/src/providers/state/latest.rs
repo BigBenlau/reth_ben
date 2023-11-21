@@ -68,12 +68,12 @@ impl<'a, 'b, TX: DbTx<'a>> StateRootProvider for LatestStateProviderRef<'a, 'b, 
 
 impl<'a, 'b, TX: DbTx<'a>> StateProvider for LatestStateProviderRef<'a, 'b, TX> {
     /// Get storage.
-    println!("reth db provider latest storage!!!!!");
     fn storage(
         &self,
         account: Address,
         storage_key: StorageKey,
     ) -> RethResult<Option<StorageValue>> {
+        println!("reth db provider latest storage!!!!!");
         let mut cursor = self.db.cursor_dup_read::<tables::PlainStorageState>()?;
         if let Some(entry) = cursor.seek_by_key_subkey(account, storage_key)? {
             if entry.key == storage_key {

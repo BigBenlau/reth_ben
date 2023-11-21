@@ -213,12 +213,12 @@ impl<'a, 'b, TX: DbTx<'a>> StateRootProvider for HistoricalStateProviderRef<'a, 
 
 impl<'a, 'b, TX: DbTx<'a>> StateProvider for HistoricalStateProviderRef<'a, 'b, TX> {
     /// Get storage.
-    println!("reth db provider historical storage!!!!!");
     fn storage(
         &self,
         address: Address,
         storage_key: StorageKey,
     ) -> RethResult<Option<StorageValue>> {
+        println!("reth db provider historical storage!!!!!");
         match self.storage_history_lookup(address, storage_key)? {
             HistoryInfo::NotYetWritten => Ok(None),
             HistoryInfo::InChangeset(changeset_block_number) => Ok(Some(
