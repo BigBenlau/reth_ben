@@ -264,6 +264,11 @@ impl<'a> EVMProcessor<'a> {
         } else {
             // main execution.
             println!("processor transact.transact. Hash: {}", hash);
+            tracing::info!(
+                target: "evm",
+                ?hash, ?transaction, env = ?self.evm.env, db = ?Some(self.evm.db),
+                "Processor transact.transact"
+            );
             self.evm.transact()
         };
         out.map_err(|e| BlockValidationError::EVM { hash, message: format!("{e:?}") }.into())
