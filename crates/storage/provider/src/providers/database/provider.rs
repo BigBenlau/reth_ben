@@ -192,6 +192,7 @@ impl<'this, TX: DbTx<'this>> DatabaseProvider<'this, TX> {
 impl<'this, TX: DbTxMut<'this> + DbTx<'this>> DatabaseProvider<'this, TX> {
     /// Commit database transaction.
     pub fn commit(self) -> RethResult<bool> {
+        println!("Reth storage providers commit()!!");
         Ok(self.tx.commit()?)
     }
 
