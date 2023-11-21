@@ -266,7 +266,7 @@ impl<'a> EVMProcessor<'a> {
             println!("processor transact.transact. Hash: {}", hash);
             tracing::info!(
                 target: "evm",
-                ?hash, ?transaction, env = ?self.evm.env, db = ?Some(self.evm.db),
+                ?hash, ?transaction, env = ?self.evm.env,
                 "Processor transact.transact"
             );
             self.evm.transact()
