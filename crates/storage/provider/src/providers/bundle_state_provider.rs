@@ -75,6 +75,7 @@ impl<SP: StateProvider, BSDP: BundleStateDataProvider> StateProvider
         storage_key: reth_primitives::StorageKey,
     ) -> RethResult<Option<reth_primitives::StorageValue>> {
         let u256_storage_key = storage_key.into();
+        println!("reth bundle state provider storage()");
         if let Some(value) =
             self.post_state_data_provider.state().storage(&account, u256_storage_key)
         {
