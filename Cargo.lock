@@ -6331,7 +6331,7 @@ dependencies = [
 [[package]]
 name = "revm"
 version = "3.3.0"
-source = "git+https://github.com/BigBenlau/revm_ben?rev=57c43ee5#57c43ee54f020fb8b75b131e19f3d95703298467"
+source = "git+https://github.com/BigBenlau/revm_ben?rev=6d570cfd#6d570cfdd36b7e433e215f687e008f77fe3cf04a"
 dependencies = [
  "auto_impl",
  "revm-interpreter",
@@ -6342,7 +6342,7 @@ dependencies = [
 [[package]]
 name = "revm-interpreter"
 version = "1.1.2"
-source = "git+https://github.com/BigBenlau/revm_ben?rev=57c43ee5#57c43ee54f020fb8b75b131e19f3d95703298467"
+source = "git+https://github.com/BigBenlau/revm_ben?rev=6d570cfd#6d570cfdd36b7e433e215f687e008f77fe3cf04a"
 dependencies = [
  "derive_more",
  "enumn",
@@ -6353,7 +6353,7 @@ dependencies = [
 [[package]]
 name = "revm-precompile"
 version = "2.0.3"
-source = "git+https://github.com/BigBenlau/revm_ben?rev=57c43ee5#57c43ee54f020fb8b75b131e19f3d95703298467"
+source = "git+https://github.com/BigBenlau/revm_ben?rev=6d570cfd#6d570cfdd36b7e433e215f687e008f77fe3cf04a"
 dependencies = [
  "c-kzg 0.1.0 (git+https://github.com/ethereum/c-kzg-4844)",
  "hex",
@@ -6371,7 +6371,7 @@ dependencies = [
 [[package]]
 name = "revm-primitives"
 version = "1.1.2"
-source = "git+https://github.com/BigBenlau/revm_ben?rev=57c43ee5#57c43ee54f020fb8b75b131e19f3d95703298467"
+source = "git+https://github.com/BigBenlau/revm_ben?rev=6d570cfd#6d570cfdd36b7e433e215f687e008f77fe3cf04a"
 dependencies = [
  "arbitrary",
  "auto_impl",
