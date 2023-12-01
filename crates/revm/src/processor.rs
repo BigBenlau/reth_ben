@@ -553,6 +553,9 @@ pub fn verify_receipt<'a>(
     // Check receipts root.
     let receipts_with_bloom = receipts.map(|r| r.clone().into()).collect::<Vec<ReceiptWithBloom>>();
     let receipts_root = reth_primitives::proofs::calculate_receipt_root(&receipts_with_bloom);
+
+    println!("{:?}, {:?}", receipts_root, expected_receipts_root);
+
     if receipts_root != expected_receipts_root {
         return Err(BlockValidationError::ReceiptRootDiff {
             got: receipts_root,
