@@ -267,7 +267,7 @@ reth-trie-parallel = { path = "crates/trie-parallel" }
 reth-node-events = { path = "crates/node/events" }
 
 # revm
-revm = { git = "https://github.com/BigBenlau/revm_ben", rev = "54042943", features = [
+revm = { git = "https://github.com/BigBenlau/revm_ben", rev = "1640b8f6", features = [
     "std",
     "secp256k1",
 ], default-features = false }
