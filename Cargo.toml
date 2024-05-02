@@ -271,7 +271,7 @@ revm = { git = "https://github.com/BigBenlau/revm_ben", rev = "54042943", featur
     "std",
     "secp256k1",
 ], default-features = false }
-revm-primitives = { git = "https://github.com/BigBenlau/revm_ben", rev = "54042943", features = [
+revm-primitives = { git = "https://github.com/BigBenlau/revm_ben", rev = "ba37a745", features = [
     "std",
 ], default-features = false }
 revm-inspectors = { git = "https://github.com/paradigmxyz/evm-inspectors", rev = "dc614ee" }
