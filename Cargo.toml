@@ -267,7 +267,7 @@ reth-trie-parallel = { path = "crates/trie-parallel" }
 reth-node-events = { path = "crates/node/events" }
 
 # revm
-revm = { path = "../revm_ben/target/package/revm-8.0.0", features = [
+revm = { path = "locals/revm-8.0.0", features = [
     "std",
     "secp256k1",
 ], default-features = false }
@@ -275,10 +275,10 @@ revm = { path = "../revm_ben/target/package/revm-8.0.0", features = [
 #     "std",
 #     "secp256k1",
 # ], default-features = false }
-# revm-primitives = { git = "https://github.com/BigBenlau/revm_ben", rev = "ba37a745", features = [
+# revm-primitives = { path = "locals/revm-primitives-3.1.1", features = [
 #     "std",
 # ], default-features = false }
-revm-primitives = { version = "3.1.0", features = [
+revm-primitives = { version = "3.1.1", features = [
     "std",
 ], default-features = false }
 revm-inspectors = { git = "https://github.com/paradigmxyz/evm-inspectors", rev = "dc614ee" }
