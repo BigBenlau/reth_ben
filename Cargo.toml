@@ -267,7 +267,11 @@ reth-trie-parallel = { path = "crates/trie-parallel" }
 reth-node-events = { path = "crates/node/events" }
 
 # revm
-revm = { path = "locals/revm-8.0.0", features = [
+# revm = { git = "https://github.com/BigBenlau/revm_ben", branch = "revm_ben", features = [
+#     "std",
+#     "secp256k1",
+# ], default-features = false }
+revm = { path = "locals/revm", features = [
     "std",
     "secp256k1",
 ], default-features = false }
@@ -275,13 +279,14 @@ revm = { path = "locals/revm-8.0.0", features = [
 #     "std",
 #     "secp256k1",
 # ], default-features = false }
-# revm-primitives = { path = "locals/revm-primitives-3.1.1", features = [
-#     "std",
-# ], default-features = false }
-revm-primitives = { version = "3.1.1", features = [
+revm-primitives = { path = "locals/primitives", features = [
     "std",
 ], default-features = false }
-revm-inspectors = { git = "https://github.com/paradigmxyz/evm-inspectors", rev = "dc614ee" }
+# revm-primitives = { version = "3.1.1", features = [
+#     "std",
+# ], default-features = false }
+revm-inspectors = { path = "locals/revm-inspector" }
+# revm-inspectors = { git = "https://github.com/paradigmxyz/evm-inspectors", rev = "dc614ee" }
 
 # eth
 alloy-chains = "0.1.15"
