@@ -239,10 +239,12 @@ where
                 "Executed transaction"
             );
             // pop last handle register
+            println!("transact go inspect");
             self.evm.handler.pop_handle_register();
             output
         } else {
             // Main execution without needing the hash
+            println!("transact not go inspect and use inspect");
             self.evm.transact()
         };
 
@@ -350,6 +352,10 @@ where
                 }
                 .into())
             }
+
+            let total_used_gas:u64 = 0;
+
+
             // Execute transaction.
             let ResultAndState { result, state } = self.transact(transaction, *sender)?;
             trace!(

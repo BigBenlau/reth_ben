@@ -170,7 +170,6 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
     /// This function will validate the transaction.
     #[inline]
     pub fn transact(&mut self) -> EVMResult<DB::Error> {
-        println!("Start revm transact");
         self.handler.validation().env(&self.context.evm.env)?;
         let initial_gas_spend = self
             .handler
