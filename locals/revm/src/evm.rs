@@ -264,6 +264,7 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
             // run interpreter
             let interpreter = &mut stack_frame.frame_data_mut().interpreter;
             let next_action = interpreter.run(shared_memory, instruction_table, self);
+            println!("next action: {:?}", next_action);
 
             // take error and break the loop if there is any.
             // This error is set From Interpreter when it's interacting with Host.
