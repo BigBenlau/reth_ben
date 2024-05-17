@@ -239,12 +239,10 @@ where
                 "Executed transaction"
             );
             // pop last handle register
-            println!("transact go inspect");
             self.evm.handler.pop_handle_register();
             output
         } else {
             // Main execution without needing the hash
-            println!("transact not go inspect and use inspect");
             self.evm.transact()
         };
 

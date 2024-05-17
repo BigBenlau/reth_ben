@@ -218,6 +218,7 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
         first_frame: Frame,
     ) -> Result<FrameResult, EVMError<DB::Error>> {
         // take instruction table
+        println!("{:?}", first_frame);
         let table = self
             .handler
             .take_instruction_table()
