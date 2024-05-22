@@ -17,7 +17,7 @@ use core::cmp::min;
 use revm_primitives::U256;
 use std::borrow::ToOwned;
 use std::boxed::Box;
-use std::time::{Instant, Duration};
+use std::time::Instant;
 
 /// EVM bytecode interpreter.
 #[derive(Debug)]
