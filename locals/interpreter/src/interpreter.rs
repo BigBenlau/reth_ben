@@ -17,6 +17,7 @@ use core::cmp::min;
 use revm_primitives::U256;
 use std::borrow::ToOwned;
 use std::boxed::Box;
+use std::time::{Instant, Duration};
 
 /// EVM bytecode interpreter.
 #[derive(Debug)]
@@ -297,7 +298,13 @@ impl Interpreter {
         self.instruction_pointer = unsafe { self.instruction_pointer.offset(1) };
 
         // execute instruction.
-        (instruction_table[opcode as usize])(self, host)
+        let start = Instant::now();
+
+        (instruction_table[opcode as usize])(self, host);
+
+        let end = Instant::now();
+        let elapsed_ns = end.duration_since(start).as_nanos();
+        println!("run time as nanos: {:?}", elapsed_ns)
     }
 
     /// Take memory and replace it with empty memory.
