@@ -291,7 +291,7 @@ impl Interpreter {
     {
         // Get current opcode.
         let opcode = unsafe { *self.instruction_pointer };
-        println!("opcode {:?}", OpCode::new(opcode).unwrap().as_str());
+
         // SAFETY: In analysis we are doing padding of bytecode so that we are sure that last
         // byte instruction is STOP so we are safe to just increment program_counter bcs on last instruction
         // it will do noop and just stop execution of this contract
@@ -304,7 +304,7 @@ impl Interpreter {
 
         let end = Instant::now();
         let elapsed_ns = end.duration_since(start).as_nanos();
-        println!("run time as nanos: {:?}", elapsed_ns)
+        println!("Opcode name is {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
     }
 
     /// Take memory and replace it with empty memory.
