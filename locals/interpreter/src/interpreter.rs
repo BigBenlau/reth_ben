@@ -18,6 +18,7 @@ use revm_primitives::U256;
 use std::borrow::ToOwned;
 use std::boxed::Box;
 use std::time::Instant;
+use std::thread;
 
 /// EVM bytecode interpreter.
 #[derive(Debug)]
@@ -304,7 +305,11 @@ impl Interpreter {
 
         let end = Instant::now();
         let elapsed_ns = end.duration_since(start).as_nanos();
-        // println!("Opcode name is {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
+
+        let handle = thread::spawn(move || {
+            println!("Opcode name is {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
+        });
+        handle.join().unwrap();
     }
 
     /// Take memory and replace it with empty memory.
