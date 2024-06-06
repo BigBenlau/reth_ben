@@ -304,7 +304,7 @@ impl Interpreter {
 
         let end = Instant::now();
         let elapsed_ns = end.duration_since(start).as_nanos();
-        println!("Opcode name is {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
+        // println!("Opcode name is {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
     }
 
     /// Take memory and replace it with empty memory.
