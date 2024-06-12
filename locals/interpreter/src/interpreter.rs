@@ -11,7 +11,7 @@ pub use stack::{Stack, STACK_LIMIT};
 use crate::{
     primitives::Bytes, push, push_b256, return_ok, return_revert, CallInputs, CallOutcome,
     CreateInputs, CreateOutcome, Gas, Host, InstructionResult,
-    instructions::OpCode
+    update_total_op_count_and_time
 };
 use core::cmp::min;
 use revm_primitives::U256;
@@ -305,7 +305,7 @@ impl Interpreter {
         let end = Instant::now();
         let elapsed_ns = end.duration_since(start).as_nanos();
 
-        println!("Opcode name is {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
+        update_total_op_count_and_time(opcode, elapsed_ns);
     }
 
     /// Take memory and replace it with empty memory.
