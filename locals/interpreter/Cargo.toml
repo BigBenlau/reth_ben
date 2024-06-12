@@ -22,6 +22,9 @@ serde = { version = "1.0", default-features = false, features = [
     "rc",
 ], optional = true }
 
+lazy_static = "1.4.0"
+once_cell = "1.19.0"
+
 [features]
 default = ["std"]
 std = ["serde?/std", "revm-primitives/std"]

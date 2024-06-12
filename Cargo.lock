@@ -7852,6 +7852,8 @@ dependencies = [
 name = "revm-interpreter"
 version = "4.0.0"
 dependencies = [
+ "lazy_static",
+ "once_cell",
  "revm-primitives",
  "serde",
 ]

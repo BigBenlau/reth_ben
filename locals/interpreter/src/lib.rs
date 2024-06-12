@@ -20,6 +20,7 @@ mod inner_models;
 mod instruction_result;
 pub mod instructions;
 pub mod interpreter;
+pub mod parallel;
 
 // Reexport primary types.
 pub use call_outcome::CallOutcome;
@@ -34,6 +35,9 @@ pub use interpreter::{
     InterpreterResult, SharedMemory, Stack, EMPTY_SHARED_MEMORY, STACK_LIMIT,
 };
 pub use primitives::{MAX_CODE_SIZE, MAX_INITCODE_SIZE};
+pub use parallel::{
+    start_channel, update_total_op_count_and_time, print_records
+};
 
 #[doc(hidden)]
 pub use revm_primitives as primitives;
