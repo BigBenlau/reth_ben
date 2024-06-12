@@ -305,7 +305,7 @@ impl Interpreter {
         let end = Instant::now();
         let elapsed_ns = end.duration_since(start).as_nanos();
 
-        update_total_op_count_and_time(opcode, elapsed_ns);
+        // update_total_op_count_and_time(opcode, elapsed_ns);
     }
 
     /// Take memory and replace it with empty memory.
