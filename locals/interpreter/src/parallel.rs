@@ -21,9 +21,9 @@ static CHANNEL: Lazy<(mpsc::Sender<HashMap<u8, u128>>, Mutex<mpsc::Receiver<Hash
     (sender, Mutex::new(receiver))
 });
 
-pub fn start_channel() {
+pub fn start_channel() -> thread::JoinHandle<()> {
     // 启动一个线程来处理日志
-    thread::spawn(|| {
+    let log_handle: thread::JoinHandle<()> = thread::spawn(|| {
         loop {
             // 锁定接收端，并尝试接收消息
             let log_message = {
@@ -54,6 +54,7 @@ pub fn start_channel() {
             }
         }
     });
+    log_handle
 }
 
 pub fn update_total_op_count_and_time(op: u8, run_time: u128) {
