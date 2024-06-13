@@ -306,8 +306,11 @@ impl Interpreter {
         let end = Instant::now();
         let elapsed_ns = end.duration_since(start).as_nanos();
 
-        println!("Opcode name is: {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
-        update_total_op_count_and_time(opcode, elapsed_ns);
+        let tx_result_checking = self.instruction_result.is_ok();
+        if tx_result_checking {
+            println!("Opcode name is: {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
+            update_total_op_count_and_time(opcode, elapsed_ns);
+        }
     }
 
     /// Take memory and replace it with empty memory.
