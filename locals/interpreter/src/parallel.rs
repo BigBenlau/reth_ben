@@ -17,7 +17,7 @@ lazy_static! {
 }
 
 // 创建一个全局的 mpsc::channel，并用 Mutex 封装接收端
-static CHANNEL: Lazy<(mpsc::Sender<HashMap<u8, u128>>, Mutex<mpsc::Receiver<HashMap<u8, u128>>>)> = Lazy::new(|| {
+static CHANNEL: Lazy<(mpsc::Sender<(u8, u128)>, Mutex<mpsc::Receiver<(u8, u128)>>)> = Lazy::new(|| {
     let (sender, receiver) = mpsc::channel();
     (sender, Mutex::new(receiver))
 });
@@ -36,18 +36,18 @@ pub fn start_channel() -> thread::JoinHandle<()> {
             match log_message {
                 Ok(message) => {
                     // 在这里写日志，例如，写入文件或打印到控制台
-                    for (op, op_run_time) in message {
-                        let op_code = OpCode::new(op).unwrap().as_str();
+                    let op = message.0;
+                    let op_run_time = message.1;
+                    let op_code = OpCode::new(op).unwrap().as_str();
 
-                        let mut op_count_map_temp = OP_COUNT_MAP.lock().unwrap();
-                        let op_count = op_count_map_temp.entry(&op_code).or_insert(0);
-                        *op_count += 1;
+                    let mut op_count_map_temp = OP_COUNT_MAP.lock().unwrap();
+                    let op_count = op_count_map_temp.entry(&op_code).or_insert(0);
+                    *op_count += 1;
 
-                        let mut op_time_map_temp = OP_TIME_MAP.lock().unwrap();
-                        let op_time = op_time_map_temp.entry(&op_code).or_insert(0);
-                        *op_time += op_run_time;
+                    let mut op_time_map_temp = OP_TIME_MAP.lock().unwrap();
+                    let op_time = op_time_map_temp.entry(&op_code).or_insert(0);
+                    *op_time += op_run_time;
                     }
-                }
                 Err(_) => {
                     // 当发送端关闭时，退出循环
                     break;
@@ -58,13 +58,14 @@ pub fn start_channel() -> thread::JoinHandle<()> {
     log_handle
 }
 
-pub fn update_total_op_count_and_time(op: u8, run_time: u128) {
+pub fn update_total_op_count_and_time(op_list: Vec<u8>, run_time_list: Vec<u128>) {
     // let start = Instant::now();
     thread::spawn(move || {
-        let map_value: HashMap<u8, u128> = HashMap::from([
-            (op, run_time),
-            ]);
-        CHANNEL.0.send(map_value).unwrap();
+        for idx in 0..op_list.len() {
+            let op = op_list[idx];
+            let run_time = run_time_list[idx];
+            CHANNEL.0.send((op, run_time)).unwrap();
+        }
     });
     // let end = Instant::now();
     // let elapsed_ns = end.duration_since(start).as_nanos();
