@@ -52,6 +52,9 @@ pub struct Interpreter {
     /// Set inside CALL or CREATE instructions and RETURN or REVERT instructions. Additionally those instructions will set
     /// InstructionResult to CallOrCreate/Return/Revert so we know the reason.
     pub next_action: InterpreterAction,
+
+    pub op_code_tmp: u8,
+    pub op_time_tmp: u128,
 }
 
 /// The result of an interpreter operation.
@@ -129,6 +132,8 @@ impl Interpreter {
             shared_memory: EMPTY_SHARED_MEMORY,
             stack: Stack::new(),
             next_action: InterpreterAction::None,
+            op_code_tmp: u8::MIN,
+            op_time_tmp: u128::MIN,
         }
     }
 
@@ -308,6 +313,8 @@ impl Interpreter {
 
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {
+            self.op_code_tmp = opcode;
+            self.op_time_tmp = elapsed_ns;
             // let thread_start = Instant::now();
             // thread::spawn(move || {
             //     update_total_op_count_and_time(opcode, elapsed_ns);
@@ -338,6 +345,21 @@ impl Interpreter {
         // main loop
         while self.instruction_result == InstructionResult::Continue {
             self.step(instruction_table, host);
+
+
+            let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
+
+            if tx_result_checking && self.op_code_tmp != u8::MIN {
+                let thread_start = Instant::now();
+                let op_code_copy = self.op_code_tmp.clone();
+                let op_time_copy = self.op_time_tmp.clone();
+                thread::spawn(move || {
+                    update_total_op_count_and_time(op_code_copy, op_time_copy);
+                });
+                let thread_end = Instant::now();
+                let thread_elapsed_ns = thread_end.duration_since(thread_start).as_nanos();
+                println!("Thread elapsed time: {:?}", thread_elapsed_ns);
+            }
         }
 
         // Return next action if it is some.
