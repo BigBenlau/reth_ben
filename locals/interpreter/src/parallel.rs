@@ -66,6 +66,7 @@ pub fn update_total_op_count_and_time(op_list: [u128; 256], run_time_list: [u128
             let op = op_idx as u8;
             let op_count = op_list[op_idx];
             let op_run_time = run_time_list[op_idx];
+            println!("Print op idx {:?}, op_count {:?}, op time {:?}", op_idx, op_count, op_run_time);
             CHANNEL.0.send((op, op_count, op_run_time)).unwrap();
         }
     });
