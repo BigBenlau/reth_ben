@@ -303,18 +303,19 @@ impl Interpreter {
         self.instruction_pointer = unsafe { self.instruction_pointer.offset(1) };
 
         // execute instruction.
-        let start = Instant::now();
+
+        // let start = Instant::now();
 
         (instruction_table[opcode as usize])(self, host);
 
-        let end = Instant::now();
-        let elapsed_ns = end.duration_since(start).as_nanos();
+        // let end = Instant::now();
+        // let elapsed_ns = end.duration_since(start).as_nanos();
 
-        let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
-        if tx_result_checking {
-            self.op_code_list.push(opcode);
-            self.op_time_list.push(elapsed_ns);
-        }
+        // let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
+        // if tx_result_checking {
+        //     self.op_code_list.push(opcode);
+        //     self.op_time_list.push(elapsed_ns);
+        // }
     }
 
     /// Take memory and replace it with empty memory.
@@ -340,11 +341,11 @@ impl Interpreter {
         }
 
         // extra, record time
-        let op_code_list_copy = self.op_code_list.clone();
-        let op_time_list_copy = self.op_time_list.clone();
-        update_total_op_count_and_time(op_code_list_copy, op_time_list_copy);
-        self.op_code_list = Vec::new();
-        self.op_time_list = Vec::new();
+        // let op_code_list_copy = self.op_code_list.clone();
+        // let op_time_list_copy = self.op_time_list.clone();
+        // update_total_op_count_and_time(op_code_list_copy, op_time_list_copy);
+        // self.op_code_list = Vec::new();
+        // self.op_time_list = Vec::new();
 
 
         // Return next action if it is some.
