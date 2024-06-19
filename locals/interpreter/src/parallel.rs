@@ -17,7 +17,7 @@ lazy_static! {
 }
 
 // 创建一个全局的 mpsc::channel，并用 Mutex 封装接收端
-static CHANNEL: Lazy<(mpsc::Sender<(u8, u128)>, Mutex<mpsc::Receiver<(u8, u128)>>)> = Lazy::new(|| {
+static CHANNEL: Lazy<(mpsc::Sender<(u8, u128, u128)>, Mutex<mpsc::Receiver<(u8, u128, u128)>>)> = Lazy::new(|| {
     let (sender, receiver) = mpsc::channel();
     (sender, Mutex::new(receiver))
 });
@@ -36,17 +36,18 @@ pub fn start_channel() -> thread::JoinHandle<()> {
             match log_message {
                 Ok(message) => {
                     // 在这里写日志，例如，写入文件或打印到控制台
-                    let op = message.0;
-                    let op_run_time = message.1;
-                    let op_code = OpCode::new(op).unwrap().as_str();
+                    let input_op = message.0;
+                    let input_op_count = message.1;
+                    let input_op_time = message.2;
+                    let op_code = OpCode::new(input_op).unwrap().as_str();
 
                     let mut op_count_map_temp = OP_COUNT_MAP.lock().unwrap();
                     let op_count = op_count_map_temp.entry(&op_code).or_insert(0);
-                    *op_count += 1;
+                    *op_count += input_op_count;
 
                     let mut op_time_map_temp = OP_TIME_MAP.lock().unwrap();
                     let op_time = op_time_map_temp.entry(&op_code).or_insert(0);
-                    *op_time += op_run_time;
+                    *op_time += input_op_time;
                     }
                 Err(_) => {
                     // 当发送端关闭时，退出循环
@@ -58,14 +59,14 @@ pub fn start_channel() -> thread::JoinHandle<()> {
     log_handle
 }
 
-pub fn update_total_op_count_and_time(op_list: Vec<u8>, run_time_list: Vec<(Instant, Instant)>) {
+pub fn update_total_op_count_and_time(op_list: [u128; 255], run_time_list: [u128; 255]) {
     // let start = Instant::now();
     thread::spawn(move || {
-        for idx in 0..op_list.len() {
-            let op = op_list[idx];
-            let (start_time, end_time) = run_time_list[idx];
-            let run_time = end_time.duration_since(start_time).as_nanos();
-            CHANNEL.0.send((op, run_time)).unwrap();
+        for op_idx in 0..255 {
+            let op = op_idx as u8;
+            let op_count = op_list[op_idx];
+            let op_run_time = run_time_list[op_idx];
+            CHANNEL.0.send((op, op_count, op_run_time)).unwrap();
         }
     });
     // let end = Instant::now();

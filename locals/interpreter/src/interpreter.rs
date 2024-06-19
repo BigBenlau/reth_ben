@@ -52,8 +52,8 @@ pub struct Interpreter {
     /// InstructionResult to CallOrCreate/Return/Revert so we know the reason.
     pub next_action: InterpreterAction,
 
-    pub op_code_list: Vec<u8>,
-    pub op_time_list: Vec<(Instant, Instant)>,
+    pub op_count_list: [u128; 255],
+    pub op_time_list: [u128; 255],
 }
 
 /// The result of an interpreter operation.
@@ -131,8 +131,8 @@ impl Interpreter {
             shared_memory: EMPTY_SHARED_MEMORY,
             stack: Stack::new(),
             next_action: InterpreterAction::None,
-            op_code_list: Vec::new(),
-            op_time_list: Vec::new(),
+            op_count_list: [0; 255],
+            op_time_list: [0; 255],
         }
     }
 
@@ -308,11 +308,13 @@ impl Interpreter {
         (instruction_table[opcode as usize])(self, host);
 
         let end = Instant::now();
+        let elapsed_time = end.duration_since(start).as_nanos();
 
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {
-            self.op_code_list.push(opcode);
-            self.op_time_list.push((start, end));
+            let op_idx = opcode as usize;
+            self.op_count_list[op_idx] += 1;
+            self.op_time_list[op_idx] += elapsed_time;
         }
     }
 
@@ -339,11 +341,11 @@ impl Interpreter {
         }
 
         // extra, record time
-        let op_code_list_copy = self.op_code_list.clone();
+        let op_count_list_copy = self.op_count_list.clone();
         let op_time_list_copy = self.op_time_list.clone();
-        update_total_op_count_and_time(op_code_list_copy, op_time_list_copy);
-        self.op_code_list = Vec::new();
-        self.op_time_list = Vec::new();
+        update_total_op_count_and_time(op_count_list_copy, op_time_list_copy);
+        self.op_count_list = [0; 255];
+        self.op_time_list = [0; 255];
 
 
         // Return next action if it is some.
