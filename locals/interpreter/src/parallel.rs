@@ -65,9 +65,11 @@ pub fn update_total_op_count_and_time(op_list: [u128; 256], run_time_list: [u128
         for op_idx in 0..256 {
             let op = op_idx as u8;
             let op_count = op_list[op_idx];
-            let op_run_time = run_time_list[op_idx];
-            println!("Print op idx {:?}, op_count {:?}, op time {:?}", op_idx, op_count, op_run_time);
-            CHANNEL.0.send((op, op_count, op_run_time)).unwrap();
+            if op_count > 0 {
+                let op_run_time = run_time_list[op_idx];
+                println!("Print op idx {:?}, op_count {:?}, op time {:?}", op_idx, op_count, op_run_time);
+                CHANNEL.0.send((op, op_count, op_run_time)).unwrap();
+            }
         }
     });
     // let end = Instant::now();
