@@ -18,7 +18,6 @@ use revm_primitives::U256;
 use std::borrow::ToOwned;
 use std::boxed::Box;
 use std::time::Instant;
-use std::thread;
 
 /// EVM bytecode interpreter.
 #[derive(Debug)]
@@ -350,15 +349,7 @@ impl Interpreter {
             let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
 
             if tx_result_checking && self.op_code_tmp != u8::MIN {
-                let thread_start = Instant::now();
-                let op_code_copy = self.op_code_tmp.clone();
-                let op_time_copy = self.op_time_tmp.clone();
-                thread::spawn(move || {
-                    update_total_op_count_and_time(op_code_copy, op_time_copy);
-                });
-                let thread_end = Instant::now();
-                let thread_elapsed_ns = thread_end.duration_since(thread_start).as_nanos();
-                println!("Thread elapsed time: {:?}", thread_elapsed_ns);
+                update_total_op_count_and_time(self.op_code_tmp, self.op_time_tmp);
             }
         }
 

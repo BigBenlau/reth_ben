@@ -59,14 +59,16 @@ pub fn start_channel() -> thread::JoinHandle<()> {
 }
 
 pub fn update_total_op_count_and_time(op: u8, run_time: u128) {
-    let start = Instant::now();
-    let map_value: HashMap<u8, u128> = HashMap::from([
-          (op, run_time),
-        ]);
-    CHANNEL.0.send(map_value).unwrap();
-    let end = Instant::now();
-    let elapsed_ns = end.duration_since(start).as_nanos();
-    println!("Run time as nanos: {:?}", elapsed_ns);
+    // let start = Instant::now();
+    thread::spawn(move || {
+        let map_value: HashMap<u8, u128> = HashMap::from([
+            (op, run_time),
+            ]);
+        CHANNEL.0.send(map_value).unwrap();
+    });
+    // let end = Instant::now();
+    // let elapsed_ns = end.duration_since(start).as_nanos();
+    // println!("Run time as nanos: {:?}", elapsed_ns);
 }
 
 
