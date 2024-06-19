@@ -52,8 +52,8 @@ pub struct Interpreter {
     /// InstructionResult to CallOrCreate/Return/Revert so we know the reason.
     pub next_action: InterpreterAction,
 
-    pub op_code_tmp: u8,
-    pub op_time_tmp: u128,
+    pub op_code_list: Vec<u8>,
+    pub op_time_list: Vec<u128>,
 }
 
 /// The result of an interpreter operation.
@@ -131,8 +131,8 @@ impl Interpreter {
             shared_memory: EMPTY_SHARED_MEMORY,
             stack: Stack::new(),
             next_action: InterpreterAction::None,
-            op_code_tmp: u8::MIN,
-            op_time_tmp: u128::MIN,
+            op_code_list: Vec::new(),
+            op_time_list: Vec::new(),
         }
     }
 
@@ -312,15 +312,14 @@ impl Interpreter {
 
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {
-            self.op_code_tmp = opcode;
-            self.op_time_tmp = elapsed_ns;
-            // let thread_start = Instant::now();
-            // thread::spawn(move || {
-            //     update_total_op_count_and_time(opcode, elapsed_ns);
-            // });
-            // let thread_end = Instant::now();
-            // let thread_elapsed_ns = thread_end.duration_since(thread_start).as_nanos();
-            // println!("Thread elapsed time: {:?}", thread_elapsed_ns);
+            let thread_start = Instant::now();
+
+            self.op_code_list.push(opcode);
+            self.op_time_list.push(elapsed_ns);
+
+            let thread_end = Instant::now();
+            let thread_elapsed_ns = thread_end.duration_since(thread_start).as_nanos();
+            println!("Thread elapsed time: {:?}", thread_elapsed_ns);
         }
     }
 
@@ -344,14 +343,11 @@ impl Interpreter {
         // main loop
         while self.instruction_result == InstructionResult::Continue {
             self.step(instruction_table, host);
-
-
-            let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
-
-            if tx_result_checking && self.op_code_tmp != u8::MIN {
-                update_total_op_count_and_time(self.op_code_tmp, self.op_time_tmp);
-            }
         }
+
+        let op_code_list_copy = self.op_code_list.clone();
+        let op_time_list_copy = self.op_time_list.clone();
+        update_total_op_count_and_time(op_code_list_copy, op_time_list_copy);
 
         // Return next action if it is some.
         if self.next_action.is_some() {
