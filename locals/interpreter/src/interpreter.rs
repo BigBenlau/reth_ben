@@ -53,7 +53,7 @@ pub struct Interpreter {
     pub next_action: InterpreterAction,
 
     pub op_code_list: Vec<u8>,
-    pub op_time_list: Vec<u128>,
+    pub op_time_list: Vec<(Instant, Instant)>,
 }
 
 /// The result of an interpreter operation.
@@ -308,12 +308,11 @@ impl Interpreter {
         (instruction_table[opcode as usize])(self, host);
 
         let end = Instant::now();
-        let elapsed_ns = end.duration_since(start).as_nanos();
 
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {
             self.op_code_list.push(opcode);
-            self.op_time_list.push(elapsed_ns);
+            self.op_time_list.push((start, end));
         }
     }
 

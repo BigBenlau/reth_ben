@@ -58,12 +58,13 @@ pub fn start_channel() -> thread::JoinHandle<()> {
     log_handle
 }
 
-pub fn update_total_op_count_and_time(op_list: Vec<u8>, run_time_list: Vec<u128>) {
+pub fn update_total_op_count_and_time(op_list: Vec<u8>, run_time_list: Vec<(Instant, Instant)>) {
     // let start = Instant::now();
     thread::spawn(move || {
         for idx in 0..op_list.len() {
             let op = op_list[idx];
-            let run_time = run_time_list[idx];
+            let (start_time, end_time) = run_time_list[idx];
+            let run_time = end_time.duration_since(start_time).as_nanos();
             CHANNEL.0.send((op, run_time)).unwrap();
         }
     });
