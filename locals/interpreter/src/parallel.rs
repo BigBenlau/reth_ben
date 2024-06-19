@@ -6,6 +6,7 @@ use std::sync::{mpsc, Mutex};
 use crate::instructions::OpCode;
 use lazy_static::lazy_static;
 
+use std::time::Instant;
 
 // 使用 lazy_static 来创建一个全局的 HashMap，并用 Mutex 封装
 lazy_static! {
@@ -58,10 +59,14 @@ pub fn start_channel() -> thread::JoinHandle<()> {
 }
 
 pub fn update_total_op_count_and_time(op: u8, run_time: u128) {
+    let start = Instant::now();
     let map_value: HashMap<u8, u128> = HashMap::from([
           (op, run_time),
         ]);
     CHANNEL.0.send(map_value).unwrap();
+    let end = Instant::now();
+    let elapsed_ns = end.duration_since(start).as_nanos();
+    println!("Run time as nanos: {:?}", elapsed_ns);
 }
 
 
