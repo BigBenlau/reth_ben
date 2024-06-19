@@ -11,7 +11,6 @@ pub use stack::{Stack, STACK_LIMIT};
 use crate::{
     primitives::Bytes, push, push_b256, return_ok, return_revert, CallInputs, CallOutcome,
     CreateInputs, CreateOutcome, Gas, Host, InstructionResult,
-    instructions::OpCode,
     update_total_op_count_and_time
 };
 use core::cmp::min;
