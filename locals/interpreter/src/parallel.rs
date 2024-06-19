@@ -59,10 +59,10 @@ pub fn start_channel() -> thread::JoinHandle<()> {
     log_handle
 }
 
-pub fn update_total_op_count_and_time(op_list: [u128; 255], run_time_list: [u128; 255]) {
+pub fn update_total_op_count_and_time(op_list: [u128; 256], run_time_list: [u128; 256]) {
     // let start = Instant::now();
     thread::spawn(move || {
-        for op_idx in 0..255 {
+        for op_idx in 0..256 {
             let op = op_idx as u8;
             let op_count = op_list[op_idx];
             let op_run_time = run_time_list[op_idx];

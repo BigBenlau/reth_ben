@@ -52,8 +52,8 @@ pub struct Interpreter {
     /// InstructionResult to CallOrCreate/Return/Revert so we know the reason.
     pub next_action: InterpreterAction,
 
-    pub op_count_list: [u128; 255],
-    pub op_time_list: [u128; 255],
+    pub op_count_list: [u128; 256],
+    pub op_time_list: [u128; 256],
 }
 
 /// The result of an interpreter operation.
@@ -131,8 +131,8 @@ impl Interpreter {
             shared_memory: EMPTY_SHARED_MEMORY,
             stack: Stack::new(),
             next_action: InterpreterAction::None,
-            op_count_list: [0; 255],
-            op_time_list: [0; 255],
+            op_count_list: [0; 256],
+            op_time_list: [0; 256],
         }
     }
 
@@ -344,8 +344,8 @@ impl Interpreter {
         let op_count_list_copy = self.op_count_list.clone();
         let op_time_list_copy = self.op_time_list.clone();
         update_total_op_count_and_time(op_count_list_copy, op_time_list_copy);
-        self.op_count_list = [0; 255];
-        self.op_time_list = [0; 255];
+        self.op_count_list = [0; 256];
+        self.op_time_list = [0; 256];
 
 
         // Return next action if it is some.
