@@ -312,14 +312,8 @@ impl Interpreter {
 
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {
-            let thread_start = Instant::now();
-
             self.op_code_list.push(opcode);
             self.op_time_list.push(elapsed_ns);
-
-            let thread_end = Instant::now();
-            let thread_elapsed_ns = thread_end.duration_since(thread_start).as_nanos();
-            println!("Thread elapsed time: {:?}", thread_elapsed_ns);
         }
     }
 
@@ -345,9 +339,13 @@ impl Interpreter {
             self.step(instruction_table, host);
         }
 
+        // extra, record time
         let op_code_list_copy = self.op_code_list.clone();
         let op_time_list_copy = self.op_time_list.clone();
         update_total_op_count_and_time(op_code_list_copy, op_time_list_copy);
+        self.op_code_list = Vec::new();
+        self.op_time_list = Vec::new();
+
 
         // Return next action if it is some.
         if self.next_action.is_some() {
