@@ -18,6 +18,7 @@ use revm_primitives::U256;
 use std::borrow::ToOwned;
 use std::boxed::Box;
 use std::time::Instant;
+use std::thread;
 
 /// EVM bytecode interpreter.
 #[derive(Debug)]
@@ -308,7 +309,9 @@ impl Interpreter {
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {
             // println!("Opcode name is: {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
-            update_total_op_count_and_time(opcode, elapsed_ns);
+            thread::spawn(move || {
+                update_total_op_count_and_time(opcode, elapsed_ns);
+            });
         }
     }
 
