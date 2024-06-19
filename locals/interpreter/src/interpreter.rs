@@ -308,14 +308,13 @@ impl Interpreter {
 
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {
-            // println!("Opcode name is: {:?}. Run time as nanos: {:?}", OpCode::new(opcode).unwrap().as_str(), elapsed_ns);
-            let thread_start = Instant::now();
-            thread::spawn(move || {
-                update_total_op_count_and_time(opcode, elapsed_ns);
-            });
-            let thread_end = Instant::now();
-            let thread_elapsed_ns = thread_end.duration_since(thread_start).as_nanos();
-            println!("Thread elapsed time: {:?}", thread_elapsed_ns);
+            // let thread_start = Instant::now();
+            // thread::spawn(move || {
+            //     update_total_op_count_and_time(opcode, elapsed_ns);
+            // });
+            // let thread_end = Instant::now();
+            // let thread_elapsed_ns = thread_end.duration_since(thread_start).as_nanos();
+            // println!("Thread elapsed time: {:?}", thread_elapsed_ns);
         }
     }
 
