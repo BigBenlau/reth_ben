@@ -11,7 +11,7 @@ pub use stack::{Stack, STACK_LIMIT};
 use crate::{
     primitives::Bytes, push, push_b256, return_ok, return_revert, CallInputs, CallOutcome,
     CreateInputs, CreateOutcome, Gas, Host, InstructionResult,
-    update_total_op_count_and_time
+    update_total_op_count_and_time, gas,
 };
 use core::cmp::min;
 use revm_primitives::U256;
@@ -302,6 +302,12 @@ impl Interpreter {
         // it will do noop and just stop execution of this contract
         self.instruction_pointer = unsafe { self.instruction_pointer.offset(1) };
 
+        if opcode == 0x01 || opcode == 0x03 {
+            gas!(self, gas::VERYLOW);
+        }
+        if opcode == 0x02 || opcode == 0x04 || opcode == 0x05 || opcode == 0x06 || opcode == 0x07 || opcode == 0x0B {
+            gas!(self, gas::LOW);
+        }
         // execute instruction.
         let start = Instant::now();
 
