@@ -313,8 +313,8 @@ impl Interpreter {
 
         (instruction_table[opcode as usize])(self, host);
 
-        let end = Instant::now();
-        let elapsed_time = end.duration_since(start).as_nanos();
+        // let end = Instant::now();
+        let elapsed_time = start.elapsed().as_nanos();
 
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {

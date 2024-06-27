@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::{
     gas,
     primitives::{Spec, B256, KECCAK_EMPTY, U256},
@@ -5,15 +7,24 @@ use crate::{
 };
 
 pub fn keccak256<H: Host>(interpreter: &mut Interpreter, _host: &mut H) {
+    let timer = Instant::now();
     pop!(interpreter, from, len);
     let len = as_usize_or_fail!(interpreter, len);
     gas_or_fail!(interpreter, gas::keccak256_cost(len as u64));
+    let duration_1 = timer.elapsed().as_nanos();
+    println!("Show keccak part 1 time: {:?}", duration_1);
     let hash = if len == 0 {
         KECCAK_EMPTY
     } else {
+        let timer_2 = Instant::now();
         let from = as_usize_or_fail!(interpreter, from);
         resize_memory!(interpreter, from, len);
+        let duration_2 = timer_2.elapsed().as_nanos();
+        println!("Show keccak part 2 time: {:?}", duration_2);
+        let timer_3 = Instant::now();
         crate::primitives::keccak256(interpreter.shared_memory.slice(from, len))
+        let duration_3 = timer_3.elapsed().as_nanos();
+        println!("Show keccak part 3 time: {:?}", duration_3);
     };
 
     push_b256!(interpreter, hash);
