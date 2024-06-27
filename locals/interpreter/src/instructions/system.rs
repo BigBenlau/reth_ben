@@ -22,9 +22,10 @@ pub fn keccak256<H: Host>(interpreter: &mut Interpreter, _host: &mut H) {
         let duration_2 = timer_2.elapsed().as_nanos();
         println!("Show keccak part 2 time: {:?}", duration_2);
         let timer_3 = Instant::now();
-        crate::primitives::keccak256(interpreter.shared_memory.slice(from, len))
+        let keccak_hash = crate::primitives::keccak256(interpreter.shared_memory.slice(from, len));
         let duration_3 = timer_3.elapsed().as_nanos();
         println!("Show keccak part 3 time: {:?}", duration_3);
+        keccak_hash
     };
 
     push_b256!(interpreter, hash);
