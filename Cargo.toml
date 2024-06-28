@@ -274,6 +274,7 @@ reth-node-events = { path = "crates/node/events" }
 revm = { path = "locals/revm", features = [
     "std",
     "secp256k1",
+    "asm-keccak"
 ], default-features = false }
 # revm = { version = "8.0.0", features = [
 #     "std",
@@ -281,6 +282,7 @@ revm = { path = "locals/revm", features = [
 # ], default-features = false }
 revm-primitives = { path = "locals/primitives", features = [
     "std",
+    "asm-keccak"
 ], default-features = false }
 # revm-primitives = { version = "3.1.1", features = [
 #     "std",
