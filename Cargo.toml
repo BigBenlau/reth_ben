@@ -352,6 +352,7 @@ revm = { path = "locals/revm", features = [
     "secp256k1",
     "asm-keccak"
     "blst",
+    "asm-keccak"
 ], default-features = false }
 # revm = { version = "8.0.0", features = [
 #     "std",
