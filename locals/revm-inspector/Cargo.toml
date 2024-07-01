@@ -1,0 +1,47 @@
+[package]
+name = "revm-inspectors"
+description = "Revm inspector implementations"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.76.0"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/paradigmxyz/evm-inspectors"
+repository = "https://github.com/paradigmxyz/evm-inspectors"
+categories = ["cryptography"]
+keywords = ["ethereum", "evm", "inspectors", "tracing", "debugging"]
+
+[lints]
+rust.missing_debug_implementations = "warn"
+rust.missing_docs = "warn"
+rust.unreachable_pub = "warn"
+rustdoc.all = "warn"
+rust.unused_must_use = "deny"
+rust.rust_2018_idioms = "deny"
+clippy.lint_groups_priority = "allow"
+
+[dependencies]
+# eth
+alloy-sol-types = "0.7.0"
+alloy-primitives = "0.7.0"
+alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy", rev = "39b8695" }
+alloy-rpc-types-trace = { git = "https://github.com/alloy-rs/alloy", rev = "39b8695" }
+revm = { path = "../revm", default-features = false, features = ["std"] }
+
+anstyle = "1.0"
+colorchoice = "1.0"
+thiserror = { version = "1" }
+
+# serde
+serde = { version = "1", optional = true, features = ["derive"] }
+serde_json = { version = "1" }
+
+# js-tracer
+boa_engine = { version = "0.18", optional = true }
+boa_gc = { version = "0.18", optional = true }
+
+[dev-dependencies]
+expect-test = "1.4"
+
+[features]
+serde = ["dep:serde", "revm/serde"]
+js-tracer = ["dep:boa_engine", "dep:boa_gc"]
