@@ -1,20 +1,21 @@
 use crate::{
     db::Database,
     interpreter::{
-        analysis::to_analysed, gas, return_ok, Contract, CreateInputs, Gas, InstructionResult,
-        Interpreter, InterpreterResult, MAX_CODE_SIZE,
+        analysis::{to_analysed, validate_eof},
+        gas, return_ok, Contract, CreateInputs, EOFCreateInputs, EOFCreateKind, Gas,
+        InstructionResult, Interpreter, InterpreterResult, LoadAccountResult, SStoreResult,
+        SelfDestructResult, MAX_CODE_SIZE,
     },
     journaled_state::JournaledState,
     primitives::{
         keccak256, Account, Address, AnalysisKind, Bytecode, Bytes, CreateScheme, EVMError, Env,
-        HashSet, Spec,
+        Eof, HashSet, Spec,
         SpecId::{self, *},
-        B256, U256,
+        B256, EOF_MAGIC_BYTES, EOF_MAGIC_HASH, U256,
     },
     FrameOrResult, JournalCheckpoint, CALL_STACK_LIMIT,
 };
-use revm_interpreter::{SStoreResult, SelfDestructResult};
-use std::boxed::Box;
+use std::{boxed::Box, sync::Arc};
 
 /// EVM contexts contains data that EVM needs for execution.
 #[derive(Debug)]
@@ -113,6 +114,12 @@ impl<DB: Database> InnerEvmContext<DB> {
         &mut self.env
     }
 
+    /// Returns the error by replacing it with `Ok(())`, if any.
+    #[inline]
+    pub fn take_error(&mut self) -> Result<(), EVMError<DB::Error>> {
+        core::mem::replace(&mut self.error, Ok(()))
+    }
+
     /// Fetch block hash from database.
     #[inline]
     pub fn block_hash(&mut self, number: U256) -> Result<B256, EVMError<DB::Error>> {
@@ -141,7 +148,7 @@ impl<DB: Database> InnerEvmContext<DB> {
     pub fn load_account_exist(
         &mut self,
         address: Address,
-    ) -> Result<(bool, bool), EVMError<DB::Error>> {
+    ) -> Result<LoadAccountResult, EVMError<DB::Error>> {
         self.journaled_state
             .load_account_exist(address, &mut self.db)
     }
@@ -154,20 +161,36 @@ impl<DB: Database> InnerEvmContext<DB> {
             .map(|(acc, is_cold)| (acc.info.balance, is_cold))
     }
 
-    /// Return account code and if address is cold loaded.
+    /// Return account code bytes and if address is cold loaded.
+    ///
+    /// In case of EOF account it will return `EOF_MAGIC` (0xEF00) as code.
     #[inline]
-    pub fn code(&mut self, address: Address) -> Result<(Bytecode, bool), EVMError<DB::Error>> {
+    pub fn code(&mut self, address: Address) -> Result<(Bytes, bool), EVMError<DB::Error>> {
         self.journaled_state
             .load_code(address, &mut self.db)
-            .map(|(a, is_cold)| (a.info.code.clone().unwrap(), is_cold))
+            .map(|(a, is_cold)| {
+                // SAFETY: safe to unwrap as load_code will insert code if it is empty.
+                let code = a.info.code.as_ref().unwrap();
+                if code.is_eof() {
+                    (EOF_MAGIC_BYTES.clone(), is_cold)
+                } else {
+                    (code.original_bytes().clone(), is_cold)
+                }
+            })
     }
 
     /// Get code hash of address.
+    ///
+    /// In case of EOF account it will return `EOF_MAGIC_HASH`
+    /// (the hash of `0xEF00`).
     #[inline]
     pub fn code_hash(&mut self, address: Address) -> Result<(B256, bool), EVMError<DB::Error>> {
         let (acc, is_cold) = self.journaled_state.load_code(address, &mut self.db)?;
         if acc.is_empty() {
             return Ok((B256::ZERO, is_cold));
+        }
+        if let Some(true) = acc.info.code.as_ref().map(|code| code.is_eof()) {
+            return Ok((EOF_MAGIC_HASH, is_cold));
         }
         Ok((acc.info.code_hash, is_cold))
     }
@@ -220,19 +243,167 @@ impl<DB: Database> InnerEvmContext<DB> {
 
     /// Make create frame.
     #[inline]
+    pub fn make_eofcreate_frame(
+        &mut self,
+        spec_id: SpecId,
+        inputs: &EOFCreateInputs,
+    ) -> Result<FrameOrResult, EVMError<DB::Error>> {
+        let return_error = |e| {
+            Ok(FrameOrResult::new_eofcreate_result(
+                InterpreterResult {
+                    result: e,
+                    gas: Gas::new(inputs.gas_limit),
+                    output: Bytes::new(),
+                },
+                None,
+            ))
+        };
+
+        let (input, initcode, created_address) = match &inputs.kind {
+            EOFCreateKind::Opcode {
+                initcode,
+                input,
+                created_address,
+            } => (input.clone(), initcode.clone(), *created_address),
+            EOFCreateKind::Tx { initdata } => {
+                // Use nonce from tx (if set) or from account (if not).
+                // Nonce for call is bumped in deduct_caller
+                // TODO(make this part of nonce increment code)
+                let nonce = self.env.tx.nonce.unwrap_or_else(|| {
+                    let caller = self.env.tx.caller;
+                    self.load_account(caller)
+                        .map(|(a, _)| a.info.nonce)
+                        .unwrap_or_default()
+                });
+
+                // decode eof and init code.
+                let Ok((eof, input)) = Eof::decode_dangling(initdata.clone()) else {
+                    return return_error(InstructionResult::InvalidEOFInitCode);
+                };
+
+                if validate_eof(&eof).is_err() {
+                    // TODO (EOF) new error type.
+                    return return_error(InstructionResult::InvalidEOFInitCode);
+                }
+
+                (input, eof, self.env.tx.caller.create(nonce))
+            }
+        };
+
+        // Check depth
+        if self.journaled_state.depth() > CALL_STACK_LIMIT {
+            return return_error(InstructionResult::CallTooDeep);
+        }
+
+        // Fetch balance of caller.
+        let (caller_balance, _) = self.balance(inputs.caller)?;
+
+        // Check if caller has enough balance to send to the created contract.
+        if caller_balance < inputs.value {
+            return return_error(InstructionResult::OutOfFunds);
+        }
+
+        // Increase nonce of caller and check if it overflows
+        if self.journaled_state.inc_nonce(inputs.caller).is_none() {
+            // can't happen on mainnet.
+            return return_error(InstructionResult::Return);
+        }
+
+        // Load account so it needs to be marked as warm for access list.
+        self.journaled_state
+            .load_account(created_address, &mut self.db)?;
+
+        // create account, transfer funds and make the journal checkpoint.
+        let checkpoint = match self.journaled_state.create_account_checkpoint(
+            inputs.caller,
+            created_address,
+            inputs.value,
+            spec_id,
+        ) {
+            Ok(checkpoint) => checkpoint,
+            Err(e) => {
+                return return_error(e);
+            }
+        };
+
+        let contract = Contract::new(
+            input.clone(),
+            // fine to clone as it is Bytes.
+            Bytecode::Eof(Arc::new(initcode.clone())),
+            None,
+            created_address,
+            inputs.caller,
+            inputs.value,
+        );
+
+        let mut interpreter = Interpreter::new(contract, inputs.gas_limit, false);
+        // EOF init will enable RETURNCONTRACT opcode.
+        interpreter.set_is_eof_init();
+
+        Ok(FrameOrResult::new_eofcreate_frame(
+            created_address,
+            checkpoint,
+            interpreter,
+        ))
+    }
+
+    /// If error is present revert changes, otherwise save EOF bytecode.
+    pub fn eofcreate_return<SPEC: Spec>(
+        &mut self,
+        interpreter_result: &mut InterpreterResult,
+        address: Address,
+        journal_checkpoint: JournalCheckpoint,
+    ) {
+        // Note we still execute RETURN opcode and return the bytes.
+        // In EOF those opcodes should abort execution.
+        //
+        // In RETURN gas is still protecting us from ddos and in oog,
+        // behaviour will be same as if it failed on return.
+        //
+        // Bytes of RETURN will drained in `insert_eofcreate_outcome`.
+        if interpreter_result.result != InstructionResult::ReturnContract {
+            self.journaled_state.checkpoint_revert(journal_checkpoint);
+            return;
+        }
+
+        if interpreter_result.output.len() > MAX_CODE_SIZE {
+            self.journaled_state.checkpoint_revert(journal_checkpoint);
+            interpreter_result.result = InstructionResult::CreateContractSizeLimit;
+            return;
+        }
+
+        // deduct gas for code deployment.
+        let gas_for_code = interpreter_result.output.len() as u64 * gas::CODEDEPOSIT;
+        if !interpreter_result.gas.record_cost(gas_for_code) {
+            self.journaled_state.checkpoint_revert(journal_checkpoint);
+            interpreter_result.result = InstructionResult::OutOfGas;
+            return;
+        }
+
+        // commit changes reduces depth by -1.
+        self.journaled_state.checkpoint_commit();
+
+        // decode bytecode has a performance hit, but it has reasonable restrains.
+        let bytecode =
+            Eof::decode(interpreter_result.output.clone()).expect("Eof is already verified");
+
+        // eof bytecode is going to be hashed.
+        self.journaled_state
+            .set_code(address, Bytecode::Eof(Arc::new(bytecode)));
+    }
+
+    /// Make create frame.
+    #[inline]
     pub fn make_create_frame(
         &mut self,
         spec_id: SpecId,
         inputs: &CreateInputs,
     ) -> Result<FrameOrResult, EVMError<DB::Error>> {
-        // Prepare crate.
-        let gas = Gas::new(inputs.gas_limit);
-
         let return_error = |e| {
             Ok(FrameOrResult::new_create_result(
                 InterpreterResult {
                     result: e,
-                    gas,
+                    gas: Gas::new(inputs.gas_limit),
                     output: Bytes::new(),
                 },
                 None,
@@ -242,6 +413,11 @@ impl<DB: Database> InnerEvmContext<DB> {
         // Check depth
         if self.journaled_state.depth() > CALL_STACK_LIMIT {
             return return_error(InstructionResult::CallTooDeep);
+        }
+
+        // Prague EOF
+        if spec_id.is_enabled_in(PRAGUE_EOF) && inputs.init_code.get(..2) == Some(&[0xEF, 00]) {
+            return return_error(InstructionResult::CreateInitCodeStartingEF00);
         }
 
         // Fetch balance of caller.
@@ -292,7 +468,7 @@ impl<DB: Database> InnerEvmContext<DB> {
         let contract = Contract::new(
             Bytes::new(),
             bytecode,
-            init_code_hash,
+            Some(init_code_hash),
             created_address,
             inputs.caller,
             inputs.value,
@@ -301,7 +477,7 @@ impl<DB: Database> InnerEvmContext<DB> {
         Ok(FrameOrResult::new_create_frame(
             created_address,
             checkpoint,
-            Interpreter::new(contract, gas.limit(), false),
+            Interpreter::new(contract, inputs.gas_limit, false),
         ))
     }
 
@@ -380,9 +556,6 @@ impl<DB: Database> InnerEvmContext<DB> {
         // Do analysis of bytecode straight away.
         let bytecode = match self.env.cfg.perf_analyse_created_bytecodes {
             AnalysisKind::Raw => Bytecode::new_raw(interpreter_result.output.clone()),
-            AnalysisKind::Check => {
-                Bytecode::new_raw(interpreter_result.output.clone()).to_checked()
-            }
             AnalysisKind::Analyse => {
                 to_analysed(Bytecode::new_raw(interpreter_result.output.clone()))
             }

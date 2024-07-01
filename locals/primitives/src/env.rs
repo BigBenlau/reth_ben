@@ -1,5 +1,6 @@
 pub mod handler_cfg;
 
+use alloy_primitives::TxKind;
 pub use handler_cfg::{CfgEnvWithHandlerCfg, EnvWithHandlerCfg, HandlerCfg};
 
 use crate::{
@@ -8,11 +9,12 @@ use crate::{
     VERSIONED_HASH_VERSION_KZG,
 };
 use core::cmp::{min, Ordering};
+use core::hash::Hash;
 use std::boxed::Box;
 use std::vec::Vec;
 
 /// EVM environment configuration.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Env {
     /// Configuration of the EVM itself.
@@ -171,8 +173,12 @@ impl Env {
 
                 // ensure the total blob gas spent is at most equal to the limit
                 // assert blob_gas_used <= MAX_BLOB_GAS_PER_BLOCK
-                if self.tx.blob_hashes.len() > MAX_BLOB_NUMBER_PER_BLOCK as usize {
-                    return Err(InvalidTransaction::TooManyBlobs);
+                let num_blobs = self.tx.blob_hashes.len();
+                if num_blobs > MAX_BLOB_NUMBER_PER_BLOCK as usize {
+                    return Err(InvalidTransaction::TooManyBlobs {
+                        have: num_blobs,
+                        max: MAX_BLOB_NUMBER_PER_BLOCK as usize,
+                    });
                 }
             }
         } else {
@@ -247,7 +253,7 @@ impl Env {
 
 /// EVM configuration.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct CfgEnv {
     /// Chain ID of the EVM, it will be compared to the transaction's Chain ID.
@@ -302,6 +308,11 @@ pub struct CfgEnv {
 }
 
 impl CfgEnv {
+    pub fn with_chain_id(mut self, chain_id: u64) -> Self {
+        self.chain_id = chain_id;
+        self
+    }
+
     #[cfg(feature = "optional_eip3607")]
     pub fn is_eip3607_disabled(&self) -> bool {
         self.disable_eip3607
@@ -483,7 +494,7 @@ impl Default for BlockEnv {
 }
 
 /// The transaction environment.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TxEnv {
     /// Caller aka Author aka transaction signer.
@@ -493,7 +504,7 @@ pub struct TxEnv {
     /// The gas price of the transaction.
     pub gas_price: U256,
     /// The destination of the transaction.
-    pub transact_to: TransactTo,
+    pub transact_to: TxKind,
     /// The value sent to `transact_to`.
     pub value: U256,
     /// The data of the transaction.
@@ -541,7 +552,15 @@ pub struct TxEnv {
 
     #[cfg_attr(feature = "serde", serde(flatten))]
     #[cfg(feature = "optimism")]
+    /// Optimism fields.
     pub optimism: OptimismFields,
+}
+
+pub enum TxType {
+    Legacy,
+    Eip1559,
+    BlobTx,
+    EofCreate,
 }
 
 impl TxEnv {
@@ -567,7 +586,7 @@ impl Default for TxEnv {
             gas_limit: u64::MAX,
             gas_price: U256::ZERO,
             gas_priority_fee: None,
-            transact_to: TransactTo::Call(Address::ZERO), // will do nothing
+            transact_to: TxKind::Call(Address::ZERO), // will do nothing
             value: U256::ZERO,
             data: Bytes::new(),
             chain_id: None,
@@ -640,47 +659,8 @@ pub struct OptimismFields {
     pub enveloped_tx: Option<Bytes>,
 }
 
-/// Transaction destination.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum TransactTo {
-    /// Simple call to an address.
-    Call(Address),
-    /// Contract creation.
-    Create(CreateScheme),
-}
-
-impl TransactTo {
-    /// Calls the given address.
-    #[inline]
-    pub fn call(address: Address) -> Self {
-        Self::Call(address)
-    }
-
-    /// Creates a contract.
-    #[inline]
-    pub fn create() -> Self {
-        Self::Create(CreateScheme::Create)
-    }
-
-    /// Creates a contract with the given salt using `CREATE2`.
-    #[inline]
-    pub fn create2(salt: U256) -> Self {
-        Self::Create(CreateScheme::Create2 { salt })
-    }
-
-    /// Returns `true` if the transaction is `Call`.
-    #[inline]
-    pub fn is_call(&self) -> bool {
-        matches!(self, Self::Call(_))
-    }
-
-    /// Returns `true` if the transaction is `Create` or `Create2`.
-    #[inline]
-    pub fn is_create(&self) -> bool {
-        matches!(self, Self::Create(_))
-    }
-}
+/// Transaction destination
+pub type TransactTo = TxKind;
 
 /// Create scheme.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -701,8 +681,6 @@ pub enum CreateScheme {
 pub enum AnalysisKind {
     /// Do not perform bytecode analysis.
     Raw,
-    /// Check the bytecode for validity.
-    Check,
     /// Perform bytecode analysis.
     #[default]
     Analyse,

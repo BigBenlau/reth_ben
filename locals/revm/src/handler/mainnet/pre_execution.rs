@@ -3,12 +3,12 @@
 //! They handle initial setup of the EVM, call loop and the final return of the EVM
 
 use crate::{
-    precompile::{PrecompileSpecId, Precompiles},
+    precompile::PrecompileSpecId,
     primitives::{
         db::Database,
         Account, EVMError, Env, Spec,
-        SpecId::{CANCUN, SHANGHAI},
-        TransactTo, U256,
+        SpecId::{CANCUN, PRAGUE, SHANGHAI},
+        TxKind, BLOCKHASH_STORAGE_ADDRESS, U256,
     },
     Context, ContextPrecompiles,
 };
@@ -16,9 +16,7 @@ use crate::{
 /// Main precompile load
 #[inline]
 pub fn load_precompiles<SPEC: Spec, DB: Database>() -> ContextPrecompiles<DB> {
-    Precompiles::new(PrecompileSpecId::from_spec_id(SPEC::SPEC_ID))
-        .clone()
-        .into()
+    ContextPrecompiles::new(PrecompileSpecId::from_spec_id(SPEC::SPEC_ID))
 }
 
 /// Main load handle
@@ -34,6 +32,16 @@ pub fn load_accounts<SPEC: Spec, EXT, DB: Database>(
     if SPEC::enabled(SHANGHAI) {
         context.evm.inner.journaled_state.initial_account_load(
             context.evm.inner.env.block.coinbase,
+            &[],
+            &mut context.evm.inner.db,
+        )?;
+    }
+
+    // Load blockhash storage address
+    // EIP-2935: Serve historical block hashes from state
+    if SPEC::enabled(PRAGUE) {
+        context.evm.inner.journaled_state.initial_account_load(
+            BLOCKHASH_STORAGE_ADDRESS,
             &[],
             &mut context.evm.inner.db,
         )?;
@@ -60,7 +68,7 @@ pub fn deduct_caller_inner<SPEC: Spec>(caller_account: &mut Account, env: &Env) 
     caller_account.info.balance = caller_account.info.balance.saturating_sub(gas_cost);
 
     // bump the nonce for calls. Nonce for CREATE will be bumped in `handle_create`.
-    if matches!(env.tx.transact_to, TransactTo::Call(_)) {
+    if matches!(env.tx.transact_to, TxKind::Call(_)) {
         // Nonce is already checked
         caller_account.info.nonce = caller_account.info.nonce.saturating_add(1);
     }

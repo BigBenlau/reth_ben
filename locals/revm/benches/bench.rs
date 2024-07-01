@@ -3,10 +3,8 @@ use criterion::{
 };
 use revm::{
     db::BenchmarkDB,
-    interpreter::{analysis::to_analysed, BytecodeLocked, Contract, DummyHost, Interpreter},
-    primitives::{
-        address, bytes, hex, BerlinSpec, Bytecode, BytecodeState, Bytes, TransactTo, U256,
-    },
+    interpreter::{analysis::to_analysed, Contract, DummyHost, Interpreter},
+    primitives::{address, bytes, hex, BerlinSpec, Bytecode, Bytes, TxKind, U256},
     Evm,
 };
 use revm_interpreter::{opcode::make_instruction_table, SharedMemory, EMPTY_SHARED_MEMORY};
@@ -16,7 +14,7 @@ fn analysis(c: &mut Criterion) {
     let evm = Evm::builder()
         .modify_tx_env(|tx| {
             tx.caller = address!("0000000000000000000000000000000000000002");
-            tx.transact_to = TransactTo::Call(address!("0000000000000000000000000000000000000000"));
+            tx.transact_to = TxKind::Call(address!("0000000000000000000000000000000000000000"));
             // evm.env.tx.data = bytes!("30627b7c");
             tx.data = bytes!("8035F0CE");
         })
@@ -37,13 +35,6 @@ fn analysis(c: &mut Criterion) {
         .build();
     bench_transact(&mut g, &mut evm);
 
-    let checked = Bytecode::new_raw(contract_data.clone()).to_checked();
-    let mut evm = evm
-        .modify()
-        .reset_handler_with_db(BenchmarkDB::new_bytecode(checked))
-        .build();
-    bench_transact(&mut g, &mut evm);
-
     let analysed = to_analysed(Bytecode::new_raw(contract_data));
     let mut evm = evm
         .modify()
@@ -59,7 +50,7 @@ fn snailtracer(c: &mut Criterion) {
         .with_db(BenchmarkDB::new_bytecode(bytecode(SNAILTRACER)))
         .modify_tx_env(|tx| {
             tx.caller = address!("1000000000000000000000000000000000000000");
-            tx.transact_to = TransactTo::Call(address!("0000000000000000000000000000000000000000"));
+            tx.transact_to = TxKind::Call(address!("0000000000000000000000000000000000000000"));
             tx.data = bytes!("30627b7c");
         })
         .build();
@@ -79,7 +70,7 @@ fn transfer(c: &mut Criterion) {
         .with_db(BenchmarkDB::new_bytecode(Bytecode::new()))
         .modify_tx_env(|tx| {
             tx.caller = address!("0000000000000000000000000000000000000001");
-            tx.transact_to = TransactTo::Call(address!("0000000000000000000000000000000000000000"));
+            tx.transact_to = TxKind::Call(address!("0000000000000000000000000000000000000000"));
             tx.value = U256::from(10);
         })
         .build();
@@ -91,10 +82,10 @@ fn transfer(c: &mut Criterion) {
 }
 
 fn bench_transact<EXT>(g: &mut BenchmarkGroup<'_, WallTime>, evm: &mut Evm<'_, EXT, BenchmarkDB>) {
-    let state = match evm.context.evm.db.0.state {
-        BytecodeState::Raw => "raw",
-        BytecodeState::Checked { .. } => "checked",
-        BytecodeState::Analysed { .. } => "analysed",
+    let state = match evm.context.evm.db.0 {
+        Bytecode::LegacyRaw(_) => "raw",
+        Bytecode::LegacyAnalyzed(_) => "analysed",
+        Bytecode::Eof(_) => "eof",
     };
     let id = format!("transact/{state}");
     g.bench_function(id, |b| b.iter(|| evm.transact().unwrap()));
@@ -104,7 +95,7 @@ fn bench_eval(g: &mut BenchmarkGroup<'_, WallTime>, evm: &mut Evm<'static, (), B
     g.bench_function("eval", |b| {
         let contract = Contract {
             input: evm.context.evm.env.tx.data.clone(),
-            bytecode: BytecodeLocked::try_from(evm.context.evm.db.0.clone()).unwrap(),
+            bytecode: to_analysed(evm.context.evm.db.0.clone()),
             ..Default::default()
         };
         let mut shared_memory = SharedMemory::new();

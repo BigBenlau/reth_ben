@@ -1,36 +1,43 @@
 pub mod analysis;
 mod contract;
+#[cfg(feature = "serde")]
+pub mod serde;
 mod shared_memory;
 mod stack;
 
-pub use analysis::BytecodeLocked;
 pub use contract::Contract;
-pub use shared_memory::{next_multiple_of_32, SharedMemory, EMPTY_SHARED_MEMORY};
+pub use shared_memory::{num_words, SharedMemory, EMPTY_SHARED_MEMORY};
 pub use stack::{Stack, STACK_LIMIT};
 
 use crate::{
-    primitives::Bytes, push, push_b256, return_ok, return_revert, CallInputs, CallOutcome,
-    CreateInputs, CreateOutcome, Gas, Host, InstructionResult,
-    update_total_op_count_and_time, gas,
+    gas, primitives::Bytes, push, push_b256, return_ok, return_revert, CallOutcome, CreateOutcome,
+    FunctionStack, Gas, Host, InstructionResult, InterpreterAction,
 };
 use core::cmp::min;
-use revm_primitives::U256;
+use revm_primitives::{Bytecode, Eof, U256};
 use std::borrow::ToOwned;
-use std::boxed::Box;
-use std::time::Instant;
+use std::sync::Arc;
 
 /// EVM bytecode interpreter.
 #[derive(Debug)]
 pub struct Interpreter {
-    /// Contract information and invoking data
-    pub contract: Contract,
     /// The current instruction pointer.
     pub instruction_pointer: *const u8,
+    /// The gas state.
+    pub gas: Gas,
+    /// Contract information and invoking data
+    pub contract: Contract,
     /// The execution control flag. If this is not set to `Continue`, the interpreter will stop
     /// execution.
     pub instruction_result: InstructionResult,
-    /// The gas state.
-    pub gas: Gas,
+    /// Currently run Bytecode that instruction result will point to.
+    /// Bytecode is owned by the contract.
+    pub bytecode: Bytes,
+    /// Whether we are Interpreting the Ethereum Object Format (EOF) bytecode.
+    /// This is local field that is set from `contract.is_eof()`.
+    pub is_eof: bool,
+    /// Is init flag for eof create
+    pub is_eof_init: bool,
     /// Shared memory.
     ///
     /// Note: This field is only set while running the interpreter loop.
@@ -38,6 +45,8 @@ pub struct Interpreter {
     pub shared_memory: SharedMemory,
     /// Stack.
     pub stack: Stack,
+    /// EOF function stack.
+    pub function_stack: FunctionStack,
     /// The return data buffer for internal calls.
     /// It has multi usage:
     ///
@@ -51,89 +60,78 @@ pub struct Interpreter {
     /// Set inside CALL or CREATE instructions and RETURN or REVERT instructions. Additionally those instructions will set
     /// InstructionResult to CallOrCreate/Return/Revert so we know the reason.
     pub next_action: InterpreterAction,
-
-    pub op_count_list: [u128; 256],
-    pub op_time_list: [u128; 256],
 }
 
-/// The result of an interpreter operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct InterpreterResult {
-    /// The result of the instruction execution.
-    pub result: InstructionResult,
-    /// The output of the instruction execution.
-    pub output: Bytes,
-    /// The gas usage information.
-    pub gas: Gas,
-}
-
-#[derive(Debug, Default, Clone)]
-pub enum InterpreterAction {
-    /// CALL, CALLCODE, DELEGATECALL or STATICCALL instruction called.
-    Call {
-        /// Call inputs
-        inputs: Box<CallInputs>,
-    },
-    /// CREATE or CREATE2 instruction called.
-    Create { inputs: Box<CreateInputs> },
-    /// Interpreter finished execution.
-    Return { result: InterpreterResult },
-    /// No action
-    #[default]
-    None,
-}
-
-impl InterpreterAction {
-    /// Returns true if action is call.
-    pub fn is_call(&self) -> bool {
-        matches!(self, InterpreterAction::Call { .. })
-    }
-
-    /// Returns true if action is create.
-    pub fn is_create(&self) -> bool {
-        matches!(self, InterpreterAction::Create { .. })
-    }
-
-    /// Returns true if action is return.
-    pub fn is_return(&self) -> bool {
-        matches!(self, InterpreterAction::Return { .. })
-    }
-
-    /// Returns true if action is none.
-    pub fn is_none(&self) -> bool {
-        matches!(self, InterpreterAction::None)
-    }
-
-    /// Returns true if action is some.
-    pub fn is_some(&self) -> bool {
-        !self.is_none()
-    }
-
-    /// Returns result if action is return.
-    pub fn into_result_return(self) -> Option<InterpreterResult> {
-        match self {
-            InterpreterAction::Return { result } => Some(result),
-            _ => None,
-        }
+impl Default for Interpreter {
+    fn default() -> Self {
+        Self::new(Contract::default(), u64::MAX, false)
     }
 }
 
 impl Interpreter {
     /// Create new interpreter
     pub fn new(contract: Contract, gas_limit: u64, is_static: bool) -> Self {
+        if !contract.bytecode.is_execution_ready() {
+            panic!("Contract is not execution ready {:?}", contract.bytecode);
+        }
+        let is_eof = contract.bytecode.is_eof();
+        let bytecode = contract.bytecode.bytecode().clone();
         Self {
-            instruction_pointer: contract.bytecode.as_ptr(),
+            instruction_pointer: bytecode.as_ptr(),
+            bytecode,
             contract,
             gas: Gas::new(gas_limit),
             instruction_result: InstructionResult::Continue,
+            function_stack: FunctionStack::default(),
             is_static,
+            is_eof,
+            is_eof_init: false,
             return_data_buffer: Bytes::new(),
             shared_memory: EMPTY_SHARED_MEMORY,
             stack: Stack::new(),
             next_action: InterpreterAction::None,
-            op_count_list: [0; 256],
-            op_time_list: [0; 256],
         }
+    }
+
+    /// Set set is_eof_init to true, this is used to enable `RETURNCONTRACT` opcode.
+    #[inline]
+    pub fn set_is_eof_init(&mut self) {
+        self.is_eof_init = true;
+    }
+
+    #[inline]
+    pub fn eof(&self) -> Option<&Arc<Eof>> {
+        self.contract.bytecode.eof()
+    }
+
+    /// Test related helper
+    #[cfg(test)]
+    pub fn new_bytecode(bytecode: Bytecode) -> Self {
+        Self::new(
+            Contract::new(
+                Bytes::new(),
+                bytecode,
+                None,
+                crate::primitives::Address::default(),
+                crate::primitives::Address::default(),
+                U256::ZERO,
+            ),
+            0,
+            false,
+        )
+    }
+
+    /// Load EOF code into interpreter. PC is assumed to be correctly set
+    pub(crate) fn load_eof_code(&mut self, idx: usize, pc: usize) {
+        // SAFETY: eof flag is true only if bytecode is Eof.
+        let Bytecode::Eof(eof) = &self.contract.bytecode else {
+            panic!("Expected EOF code section")
+        };
+        let Some(code) = eof.body.code(idx) else {
+            panic!("Code not found")
+        };
+        self.bytecode = code.clone();
+        self.instruction_pointer = unsafe { self.bytecode.as_ptr().add(pc) };
     }
 
     /// Inserts the output of a `create` call into the interpreter.
@@ -193,6 +191,40 @@ impl Interpreter {
         }
     }
 
+    pub fn insert_eofcreate_outcome(&mut self, create_outcome: CreateOutcome) {
+        self.instruction_result = InstructionResult::Continue;
+        let instruction_result = create_outcome.instruction_result();
+
+        self.return_data_buffer = if *instruction_result == InstructionResult::Revert {
+            // Save data to return data buffer if the create reverted
+            create_outcome.output().to_owned()
+        } else {
+            // Otherwise clear it. Note that RETURN opcode should abort.
+            Bytes::new()
+        };
+
+        match instruction_result {
+            InstructionResult::ReturnContract => {
+                push_b256!(
+                    self,
+                    create_outcome.address.expect("EOF Address").into_word()
+                );
+                self.gas.erase_cost(create_outcome.gas().remaining());
+                self.gas.record_refund(create_outcome.gas().refunded());
+            }
+            return_revert!() => {
+                push!(self, U256::ZERO);
+                self.gas.erase_cost(create_outcome.gas().remaining());
+            }
+            InstructionResult::FatalExternalError => {
+                panic!("Fatal external error in insert_eofcreate_outcome");
+            }
+            _ => {
+                push!(self, U256::ZERO);
+            }
+        }
+    }
+
     /// Inserts the outcome of a call into the virtual machine's state.
     ///
     /// This function takes the result of a call, represented by `CallOutcome`,
@@ -221,32 +253,53 @@ impl Interpreter {
         call_outcome: CallOutcome,
     ) {
         self.instruction_result = InstructionResult::Continue;
+
         let out_offset = call_outcome.memory_start();
         let out_len = call_outcome.memory_length();
+        let out_ins_result = *call_outcome.instruction_result();
+        let out_gas = call_outcome.gas();
+        self.return_data_buffer = call_outcome.result.output;
 
-        self.return_data_buffer = call_outcome.output().to_owned();
         let target_len = min(out_len, self.return_data_buffer.len());
-
-        match call_outcome.instruction_result() {
+        match out_ins_result {
             return_ok!() => {
                 // return unspend gas.
-                let remaining = call_outcome.gas().remaining();
-                let refunded = call_outcome.gas().refunded();
-                self.gas.erase_cost(remaining);
-                self.gas.record_refund(refunded);
+                self.gas.erase_cost(out_gas.remaining());
+                self.gas.record_refund(out_gas.refunded());
                 shared_memory.set(out_offset, &self.return_data_buffer[..target_len]);
-                push!(self, U256::from(1));
+                push!(
+                    self,
+                    if self.is_eof {
+                        U256::ZERO
+                    } else {
+                        U256::from(1)
+                    }
+                );
             }
             return_revert!() => {
-                self.gas.erase_cost(call_outcome.gas().remaining());
+                self.gas.erase_cost(out_gas.remaining());
                 shared_memory.set(out_offset, &self.return_data_buffer[..target_len]);
-                push!(self, U256::ZERO);
+                push!(
+                    self,
+                    if self.is_eof {
+                        U256::from(1)
+                    } else {
+                        U256::ZERO
+                    }
+                );
             }
             InstructionResult::FatalExternalError => {
                 panic!("Fatal external error in insert_call_outcome");
             }
             _ => {
-                push!(self, U256::ZERO);
+                push!(
+                    self,
+                    if self.is_eof {
+                        U256::from(2)
+                    } else {
+                        U256::ZERO
+                    }
+                );
             }
         }
     }
@@ -280,17 +333,14 @@ impl Interpreter {
     pub fn program_counter(&self) -> usize {
         // SAFETY: `instruction_pointer` should be at an offset from the start of the bytecode.
         // In practice this is always true unless a caller modifies the `instruction_pointer` field manually.
-        unsafe {
-            self.instruction_pointer
-                .offset_from(self.contract.bytecode.as_ptr()) as usize
-        }
+        unsafe { self.instruction_pointer.offset_from(self.bytecode.as_ptr()) as usize }
     }
 
     /// Executes the instruction at the current instruction pointer.
     ///
     /// Internally it will increment instruction pointer by one.
-    #[inline(always)]
-    fn step<FN, H: Host>(&mut self, instruction_table: &[FN; 256], host: &mut H)
+    #[inline]
+    pub(crate) fn step<FN, H: Host + ?Sized>(&mut self, instruction_table: &[FN; 256], host: &mut H)
     where
         FN: Fn(&mut Interpreter, &mut H),
     {
@@ -302,26 +352,8 @@ impl Interpreter {
         // it will do noop and just stop execution of this contract
         self.instruction_pointer = unsafe { self.instruction_pointer.offset(1) };
 
-        if opcode == 0x01 || opcode == 0x03 {
-            gas!(self, gas::VERYLOW);
-        }
-        if opcode == 0x02 || opcode == 0x04 || opcode == 0x05 || opcode == 0x06 || opcode == 0x07 || opcode == 0x0B {
-            gas!(self, gas::LOW);
-        }
         // execute instruction.
-        let start = Instant::now();
-
-        (instruction_table[opcode as usize])(self, host);
-
-        // let end = Instant::now();
-        let elapsed_time = start.elapsed().as_nanos();
-
-        let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
-        if tx_result_checking {
-            let op_idx = opcode as usize;
-            self.op_count_list[op_idx] += 1;
-            self.op_time_list[op_idx] += elapsed_time;
-        }
+        (instruction_table[opcode as usize])(self, host)
     }
 
     /// Take memory and replace it with empty memory.
@@ -330,7 +362,7 @@ impl Interpreter {
     }
 
     /// Executes the interpreter until it returns or stops.
-    pub fn run<FN, H: Host>(
+    pub fn run<FN, H: Host + ?Sized>(
         &mut self,
         shared_memory: SharedMemory,
         instruction_table: &[FN; 256],
@@ -346,14 +378,6 @@ impl Interpreter {
             self.step(instruction_table, host);
         }
 
-        // extra, record time
-        let op_count_list_copy = self.op_count_list.clone();
-        let op_time_list_copy = self.op_time_list.clone();
-        update_total_op_count_and_time(op_count_list_copy, op_time_list_copy);
-        self.op_count_list = [0; 256];
-        self.op_time_list = [0; 256];
-
-
         // Return next action if it is some.
         if self.next_action.is_some() {
             return core::mem::take(&mut self.next_action);
@@ -368,9 +392,37 @@ impl Interpreter {
             },
         }
     }
+
+    /// Resize the memory to the new size. Returns whether the gas was enough to resize the memory.
+    #[inline]
+    #[must_use]
+    pub fn resize_memory(&mut self, new_size: usize) -> bool {
+        resize_memory(&mut self.shared_memory, &mut self.gas, new_size)
+    }
+}
+
+/// The result of an interpreter operation.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+pub struct InterpreterResult {
+    /// The result of the instruction execution.
+    pub result: InstructionResult,
+    /// The output of the instruction execution.
+    pub output: Bytes,
+    /// The gas usage information.
+    pub gas: Gas,
 }
 
 impl InterpreterResult {
+    /// Returns a new `InterpreterResult` with the given values.
+    pub fn new(result: InstructionResult, output: Bytes, gas: Gas) -> Self {
+        Self {
+            result,
+            output,
+            gas,
+        }
+    }
+
     /// Returns whether the instruction result is a success.
     #[inline]
     pub const fn is_ok(&self) -> bool {
@@ -387,5 +439,43 @@ impl InterpreterResult {
     #[inline]
     pub const fn is_error(&self) -> bool {
         self.result.is_error()
+    }
+}
+
+/// Resize the memory to the new size. Returns whether the gas was enough to resize the memory.
+#[inline(never)]
+#[cold]
+#[must_use]
+pub fn resize_memory(memory: &mut SharedMemory, gas: &mut Gas, new_size: usize) -> bool {
+    let new_words = num_words(new_size as u64);
+    let new_cost = gas::memory_gas(new_words);
+    let current_cost = memory.current_expansion_cost();
+    let cost = new_cost - current_cost;
+    let success = gas.record_cost(cost);
+    if success {
+        memory.resize((new_words as usize) * 32);
+    }
+    success
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{opcode::InstructionTable, DummyHost};
+    use revm_primitives::CancunSpec;
+
+    #[test]
+    fn object_safety() {
+        let mut interp = Interpreter::new(Contract::default(), u64::MAX, false);
+
+        let mut host = crate::DummyHost::default();
+        let table: InstructionTable<DummyHost> =
+            crate::opcode::make_instruction_table::<DummyHost, CancunSpec>();
+        let _ = interp.run(EMPTY_SHARED_MEMORY, &table, &mut host);
+
+        let host: &mut dyn Host = &mut host as &mut dyn Host;
+        let table: InstructionTable<dyn Host> =
+            crate::opcode::make_instruction_table::<dyn Host, CancunSpec>();
+        let _ = interp.run(EMPTY_SHARED_MEMORY, &table, host);
     }
 }

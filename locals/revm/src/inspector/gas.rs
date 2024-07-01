@@ -60,10 +60,7 @@ impl<DB: Database> Inspector<DB> for GasInspector {
         mut outcome: CallOutcome,
     ) -> CallOutcome {
         if outcome.result.result.is_error() {
-            outcome
-                .result
-                .gas
-                .record_cost(outcome.result.gas.remaining());
+            outcome.result.gas.spend_all();
             self.gas_remaining = 0;
         }
         outcome
@@ -76,10 +73,7 @@ impl<DB: Database> Inspector<DB> for GasInspector {
         mut outcome: CreateOutcome,
     ) -> CreateOutcome {
         if outcome.result.result.is_error() {
-            outcome
-                .result
-                .gas
-                .record_cost(outcome.result.gas.remaining());
+            outcome.result.gas.spend_all();
             self.gas_remaining = 0;
         }
         outcome
@@ -168,7 +162,7 @@ mod tests {
             db::BenchmarkDB,
             inspector::inspector_handle_register,
             interpreter::opcode,
-            primitives::{address, Bytecode, Bytes, TransactTo},
+            primitives::{address, Bytecode, Bytes, TxKind},
             Evm,
         };
 
@@ -195,8 +189,7 @@ mod tests {
             .modify_tx_env(|tx| {
                 tx.clear();
                 tx.caller = address!("1000000000000000000000000000000000000000");
-                tx.transact_to =
-                    TransactTo::Call(address!("0000000000000000000000000000000000000000"));
+                tx.transact_to = TxKind::Call(address!("0000000000000000000000000000000000000000"));
                 tx.gas_limit = 21100;
             })
             .append_handler_register(inspector_handle_register)

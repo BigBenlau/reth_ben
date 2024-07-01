@@ -1,9 +1,10 @@
-use crate::primitives::{hash_map::Entry, Bytecode, HashMap, U256};
 use crate::{
-    primitives::{Address, Env, Log, B256, KECCAK_EMPTY},
+    primitives::{hash_map::Entry, Address, Bytes, Env, HashMap, Log, B256, KECCAK_EMPTY, U256},
     Host, SStoreResult, SelfDestructResult,
 };
 use std::vec::Vec;
+
+use super::LoadAccountResult;
 
 /// A dummy [Host] implementation.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -44,8 +45,8 @@ impl Host for DummyHost {
     }
 
     #[inline]
-    fn load_account(&mut self, _address: Address) -> Option<(bool, bool)> {
-        Some((true, true))
+    fn load_account(&mut self, _address: Address) -> Option<LoadAccountResult> {
+        Some(LoadAccountResult::default())
     }
 
     #[inline]
@@ -59,8 +60,8 @@ impl Host for DummyHost {
     }
 
     #[inline]
-    fn code(&mut self, _address: Address) -> Option<(Bytecode, bool)> {
-        Some((Bytecode::default(), false))
+    fn code(&mut self, _address: Address) -> Option<(Bytes, bool)> {
+        Some((Bytes::default(), false))
     }
 
     #[inline]

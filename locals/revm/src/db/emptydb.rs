@@ -51,12 +51,6 @@ impl<E> EmptyDBTyped<E> {
             _phantom: PhantomData,
         }
     }
-
-    #[doc(hidden)]
-    #[deprecated = "use `new` instead"]
-    pub fn new_keccak_block_hash() -> Self {
-        Self::new()
-    }
 }
 
 impl<E> Database for EmptyDBTyped<E> {
@@ -93,7 +87,7 @@ impl<E> DatabaseRef for EmptyDBTyped<E> {
 
     #[inline]
     fn code_by_hash_ref(&self, _code_hash: B256) -> Result<Bytecode, Self::Error> {
-        Ok(Bytecode::new())
+        Ok(Bytecode::default())
     }
 
     #[inline]
