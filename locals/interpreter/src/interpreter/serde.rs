@@ -108,6 +108,8 @@ impl<'de> Deserialize<'de> for Interpreter {
             return_data_buffer,
             is_static,
             next_action,
+            op_count_list: [0; 256],
+            op_time_list: [0; 256],
         })
     }
 }

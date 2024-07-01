@@ -19,6 +19,7 @@ use revm_primitives::{Bytecode, Eof, U256};
 use std::borrow::ToOwned;
 use std::sync::Arc;
 
+use std::time::Instant;
 /// EVM bytecode interpreter.
 #[derive(Debug)]
 pub struct Interpreter {
@@ -372,12 +373,12 @@ impl Interpreter {
         // let end = Instant::now();
         let elapsed_time = start.elapsed().as_nanos();
 
-        // let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
-        // if tx_result_checking {
-        //     let op_idx = opcode as usize;
-        //     self.op_count_list[op_idx] += 1;
-        //     self.op_time_list[op_idx] += elapsed_time;
-        // }
+        let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
+        if tx_result_checking {
+            let op_idx = opcode as usize;
+            self.op_count_list[op_idx] += 1;
+            self.op_time_list[op_idx] += elapsed_time;
+        }
     }
 
     /// Take memory and replace it with empty memory.

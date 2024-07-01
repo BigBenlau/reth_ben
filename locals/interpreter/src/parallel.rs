@@ -6,7 +6,6 @@ use std::sync::{mpsc, Mutex};
 use crate::OpCode;
 use lazy_static::lazy_static;
 
-use std::time::Instant;
 
 // 使用 lazy_static 来创建一个全局的 HashMap，并用 Mutex 封装
 lazy_static! {
