@@ -350,9 +350,8 @@ reth-trie-parallel = { path = "crates/trie/parallel" }
 revm = { path = "locals/revm", features = [
     "std",
     "secp256k1",
-    "asm-keccak"
+    "asm-keccak",
     "blst",
-    "asm-keccak"
 ], default-features = false }
 # revm = { version = "10.0.0", features = [
 #     "std",
@@ -361,7 +360,7 @@ revm = { path = "locals/revm", features = [
 # ], default-features = false }
 revm-primitives = { path = "locals/primitives", features = [
     "std",
-    "asm-keccak"
+    "asm-keccak",
 ], default-features = false }
 # revm-primitives = { version = "5.0.0", features = [
 #     "std",
