@@ -110,7 +110,7 @@ where
 
 /// Helper type for the output of executing a block.
 #[derive(Debug, Clone)]
-struct EthExecuteOutput {
+pub struct EthExecuteOutput {
     receipts: Vec<Receipt>,
     requests: Vec<Request>,
     gas_used: u64,
