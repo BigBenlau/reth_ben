@@ -373,6 +373,10 @@ impl Interpreter {
         // let end = Instant::now();
         let elapsed_time = start.elapsed().as_nanos();
 
+        if opcode == 0x54 {
+            println!("sload total used time: {:?}", elapsed_time);
+        }
+
         let tx_result_checking = self.instruction_result.is_ok() || self.instruction_result == InstructionResult::CallOrCreate || self.instruction_result.is_revert();
         if tx_result_checking {
             let op_idx = opcode as usize;

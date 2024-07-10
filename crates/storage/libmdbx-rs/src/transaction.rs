@@ -15,7 +15,7 @@ use std::{
     mem::size_of,
     ptr, slice,
     sync::{atomic::AtomicBool, mpsc::sync_channel, Arc},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 mod private {
@@ -141,17 +141,21 @@ where
     where
         Key: TableObject,
     {
+        let start = Instant::now();
         let key_val: ffi::MDBX_val =
             ffi::MDBX_val { iov_len: key.len(), iov_base: key.as_ptr() as *mut c_void };
         let mut data_val: ffi::MDBX_val = ffi::MDBX_val { iov_len: 0, iov_base: ptr::null_mut() };
 
-        self.txn_execute(|txn| unsafe {
+        let a = self.txn_execute(|txn| unsafe {
             match ffi::mdbx_get(txn, dbi, &key_val, &mut data_val) {
                 ffi::MDBX_SUCCESS => Key::decode_val::<K>(txn, data_val).map(Some),
                 ffi::MDBX_NOTFOUND => Ok(None),
                 err_code => Err(Error::from_err_code(err_code)),
             }
-        })?
+        })?;
+        let elapsed_time = start.elapsed().as_nanos();
+        println!("libmdbx transaction time get used: {:?}", elapsed_time);
+        a
     }
 
     /// Commits the transaction.
