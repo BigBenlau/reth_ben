@@ -11,7 +11,7 @@ use ffi::{
     MDBX_NEXT_MULTIPLE, MDBX_NEXT_NODUP, MDBX_PREV, MDBX_PREV_DUP, MDBX_PREV_MULTIPLE,
     MDBX_PREV_NODUP, MDBX_SET, MDBX_SET_KEY, MDBX_SET_LOWERBOUND, MDBX_SET_RANGE,
 };
-use std::{borrow::Cow, ffi::c_void, fmt, marker::PhantomData, mem, ptr};
+use std::{borrow::Cow, ffi::c_void, fmt, marker::PhantomData, mem, ptr, time::Instant};
 
 /// A cursor for navigating the items within a database.
 pub struct Cursor<K>
@@ -86,6 +86,8 @@ where
         Key: TableObject,
         Value: TableObject,
     {
+        let start = Instant::now();
+
         unsafe {
             let mut key_val = slice_to_val(key);
             let mut data_val = slice_to_val(data);
@@ -108,6 +110,8 @@ where
                     }
                 };
                 let data_out = Value::decode_val::<K>(txn, data_val)?;
+                let elapsed_time = start.elapsed().as_nanos();
+                println!("libmdbx cursor time get used: {:?}", elapsed_time);
                 Ok((key_out, data_out, v))
             })?
         }
