@@ -126,6 +126,8 @@ where
     where
         Value: TableObject,
     {
+        println!("Start get_value, op is {:?}", op);
+        println!("print key: {:?}, data: {:?}", key.unwrap(), data.unwrap());
         let (_, v, _) = mdbx_try_optional!(self.get::<(), Value>(key, data, op));
 
         Ok(Some(v))

@@ -182,6 +182,7 @@ impl<K: TransactionKind, T: DupSort> DbDupCursorRO<T> for Cursor<K, T> {
         key: <T as Table>::Key,
         subkey: <T as DupSort>::SubKey,
     ) -> ValueOnlyResult<T> {
+        println!("Start seek_by_key_subkey");
         self.inner
             .get_both_range(key.encode().as_ref(), subkey.encode().as_ref())
             .map_err(|e| DatabaseError::Read(e.into()))?
