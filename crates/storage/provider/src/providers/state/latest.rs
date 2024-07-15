@@ -98,6 +98,7 @@ impl<'b, TX: DbTx> StateProvider for LatestStateProviderRef<'b, TX> {
         storage_key: StorageKey,
     ) -> ProviderResult<Option<StorageValue>> {
         let mut cursor = self.tx.cursor_dup_read::<tables::PlainStorageState>()?;
+        println!("Lastest StateProvider, key: {:?} and subkey: {:?}", account, storage_key);
         if let Some(entry) = cursor.seek_by_key_subkey(account, storage_key)? {
             if entry.key == storage_key {
                 return Ok(Some(entry.value))
