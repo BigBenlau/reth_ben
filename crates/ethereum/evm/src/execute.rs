@@ -166,9 +166,11 @@ where
         // execute transactions
         let mut cumulative_gas_used = 0;
         let mut receipts = Vec::with_capacity(block.body.len());
+        let mut tx_count = 0_u64;
         for (sender, transaction) in block.transactions_with_sender() {
             // The sum of the transaction’s gas limit, Tg, and the gas utilized in this block prior,
             // must be no greater than the block’s gasLimit.
+            println!("Start Tx. Hash is: {:?}, count is: {:?}.", transaction.hash, tx_count);
             let block_available_gas = block.header.gas_limit - cumulative_gas_used;
             if transaction.gas_limit() > block_available_gas {
                 return Err(BlockValidationError::TransactionGasLimitMoreThanAvailableBlockGas {
@@ -192,6 +194,7 @@ where
 
             // append gas used
             cumulative_gas_used += result.gas_used();
+            tx_count += 1;
 
             // Push transaction changeset and calculate header bloom filter for receipt.
             receipts.push(
