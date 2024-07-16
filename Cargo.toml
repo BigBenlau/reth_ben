@@ -384,7 +384,7 @@ alloy-rpc-types-beacon = { version = "0.1", default-features = false }
 alloy-rpc-types-admin = { version = "0.1", default-features = false }
 alloy-rpc-types-txpool = { version = "0.1", default-features = false }
 alloy-serde = { version = "0.1", default-features = false }
-alloy-rpc-types-engine = { version = "0.1", default-features = false }
+alloy-rpc-types-engine = { version = "0.1.3", default-features = false }
 alloy-rpc-types-eth = { version = "0.1", default-features = false }
 alloy-rpc-types-trace = { version = "0.1", default-features = false }
 alloy-genesis = { version = "0.1", default-features = false }
