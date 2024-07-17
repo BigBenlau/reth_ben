@@ -652,8 +652,10 @@ impl JournaledState {
     ) -> Result<(U256, bool), EVMError<DB::Error>> {
         // assume acc is warm
         let account = self.state.get_mut(&address).unwrap();
+        println!("journaled state sload. account is: {:?}.", account);
         // only if account is created in this tx we can assume that storage is empty.
         let is_newly_created = account.is_created();
+        println!("is newly created: {:?}", is_newly_created);
         let (value, is_cold) = match account.storage.entry(key) {
             Entry::Occupied(occ) => {
                 let slot = occ.into_mut();

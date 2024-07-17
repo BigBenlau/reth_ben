@@ -161,6 +161,7 @@ impl<EXT, DB: Database> Host for Context<EXT, DB> {
     }
 
     fn sload(&mut self, address: Address, index: U256) -> Option<(U256, bool)> {
+        println!("print context sload. address: {:?}, index: {:?}", address, index);
         self.evm
             .sload(address, index)
             .map_err(|e| self.evm.error = Err(e))
