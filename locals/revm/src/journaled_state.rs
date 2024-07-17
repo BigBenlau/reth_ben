@@ -652,18 +652,20 @@ impl JournaledState {
     ) -> Result<(U256, bool), EVMError<DB::Error>> {
         // assume acc is warm
         let account = self.state.get_mut(&address).unwrap();
-        println!("journaled state sload. account is: {:?}.", account);
+        println!("journaled state sload. account storage is: {:?}.", account.storage);
         // only if account is created in this tx we can assume that storage is empty.
         let is_newly_created = account.is_created();
         println!("is newly created: {:?}", is_newly_created);
         let (value, is_cold) = match account.storage.entry(key) {
             Entry::Occupied(occ) => {
+                println!("Through Entry::Occupied. occ is {:?}", occ);
                 let slot = occ.into_mut();
                 let is_cold = slot.mark_warm();
                 (slot.present_value, is_cold)
             }
             Entry::Vacant(vac) => {
                 // if storage was cleared, we don't need to ping db.
+                println!("Through Entry::Vacant. vac is {:?}", vac);
                 let value = if is_newly_created {
                     U256::ZERO
                 } else {
