@@ -97,6 +97,7 @@ impl<'b, TX: DbTx> HistoricalStateProviderRef<'b, TX> {
 
         // history key to search IntegerList of block number changesets.
         let history_key = StorageShardedKey::new(address, storage_key, self.block_number);
+        println!("Show history_key in `StoragesHistory` table: {:?}", history_key);
         self.history_info::<tables::StoragesHistory, _>(
             history_key,
             |key| key.address == address && key.sharded_key.key == storage_key,
@@ -173,25 +174,31 @@ impl<'b, TX: DbTx> HistoricalStateProviderRef<'b, TX> {
                 {
                     // The key may have been written, but due to pruning we may not have changesets
                     // and history, so we need to make a changeset lookup.
+                    println!("Through rank=0 and HistoryInfo::InChangeset, block_number is: {:?}", block_number);
                     Ok(HistoryInfo::InChangeset(block_number))
                 } else {
                     // The key is written to, but only after our block.
+                    println!("Through rank=0 and HistoryInfo::NotYetWritten");
                     Ok(HistoryInfo::NotYetWritten)
                 }
             } else if let Some(block_number) = block_number {
                 // The chunk contains an entry for a write after our block, return it.
+                println!("Through rank != 0 and HistoryInfo::InChangeset, block_number is: {:?}", block_number);
                 Ok(HistoryInfo::InChangeset(block_number))
             } else {
                 // The chunk does not contain an entry for a write after our block. This can only
                 // happen if this is the last chunk and so we need to look in the plain state.
+                println!("Through rank != 0 and HistoryInfo::InPlainState");
                 Ok(HistoryInfo::InPlainState)
             }
         } else if lowest_available_block_number.is_some() {
             // The key may have been written, but due to pruning we may not have changesets and
             // history, so we need to make a plain state lookup.
+            println!("Through HistoryInfo::MaybeInPlainState");
             Ok(HistoryInfo::MaybeInPlainState)
         } else {
             // The key has not been written to at all.
+            println!("Through HistoryInfo::NotYetWritten (The key has not been written to at all.)");
             Ok(HistoryInfo::NotYetWritten)
         }
     }
