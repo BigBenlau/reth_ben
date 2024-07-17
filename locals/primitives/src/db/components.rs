@@ -38,6 +38,7 @@ impl<S: State, BH: BlockHash> Database for DatabaseComponents<S, BH> {
     }
 
     fn storage(&mut self, address: Address, index: U256) -> Result<U256, Self::Error> {
+        println!("Through Primitives db component.");
         self.state
             .storage(address, index)
             .map_err(Self::Error::State)

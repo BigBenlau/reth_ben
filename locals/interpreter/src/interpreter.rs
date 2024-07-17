@@ -12,7 +12,8 @@ pub use stack::{Stack, STACK_LIMIT};
 use crate::{
     gas, primitives::Bytes, push, push_b256, return_ok, return_revert, CallOutcome, CreateOutcome,
     FunctionStack, Gas, Host, InstructionResult, InterpreterAction,
-    update_total_op_count_and_time
+    update_total_op_count_and_time,
+    OpCode
 };
 use core::cmp::min;
 use revm_primitives::{Bytecode, Eof, U256};
@@ -365,6 +366,7 @@ impl Interpreter {
         // if opcode == 0x02 || opcode == 0x04 || opcode == 0x05 || opcode == 0x06 || opcode == 0x07 || opcode == 0x0B {
         //     gas!(self, gas::LOW);
         // }
+        println!("Start opcode {:?}", OpCode::new(opcode).unwrap().as_str());
         let start = Instant::now();
 
         // execute instruction.
