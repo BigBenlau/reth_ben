@@ -134,7 +134,7 @@ impl<'b, TX: DbTx> HistoricalStateProviderRef<'b, TX> {
         Ok(HashedPostState::from_revert_range(self.tx, self.block_number..=tip)?)
     }
 
-    fn history_info<T, K>(
+    fn history_info<T, K: Clone>(
         &self,
         key: K,
         key_filter: impl Fn(&K) -> bool,
@@ -148,6 +148,8 @@ impl<'b, TX: DbTx> HistoricalStateProviderRef<'b, TX> {
         // Lookup the history chunk in the history index. If they key does not appear in the
         // index, the first chunk for the next key will be returned so we filter out chunks that
         // have a different key.
+        let test_result = cursor.seek(key.clone())?.unwrap().1;
+        println!("Show history info test_result: {:?}", test_result);
         if let Some(chunk) = cursor.seek(key)?.filter(|(key, _)| key_filter(key)).map(|x| x.1 .0) {
             // Get the rank of the first entry before or equal to our block.
             let mut rank = chunk.rank(self.block_number);
