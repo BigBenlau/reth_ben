@@ -290,7 +290,13 @@ impl<'b, TX: DbTx> StateProvider for HistoricalStateProviderRef<'b, TX> {
         println!("Historical StateProvider, key: {:?} and subkey: {:?}", address, storage_key);
         match self.storage_history_lookup(address, storage_key)? {
             HistoryInfo::NotYetWritten => Ok(None),
-            HistoryInfo::InChangeset(changeset_block_number) => Ok(Some(
+            HistoryInfo::InChangeset(changeset_block_number) => {
+                let test_result = self.tx
+                .cursor_dup_read::<tables::StorageChangeSets>()?
+                .seek_by_key_subkey((changeset_block_number, address).into(), storage_key)?.unwrap();
+                println!("show test result: {:?}", test_result);
+
+                Ok(Some(
                 self.tx
                     .cursor_dup_read::<tables::StorageChangeSets>()?
                     .seek_by_key_subkey((changeset_block_number, address).into(), storage_key)?
@@ -301,7 +307,7 @@ impl<'b, TX: DbTx> StateProvider for HistoricalStateProviderRef<'b, TX> {
                         storage_key: Box::new(storage_key),
                     })?
                     .value,
-            )),
+            ))},
             HistoryInfo::InPlainState | HistoryInfo::MaybeInPlainState => Ok(self
                 .tx
                 .cursor_dup_read::<tables::PlainStorageState>()?
