@@ -53,6 +53,7 @@ impl HashedPostState {
         let mut accounts = HashMap::with_capacity(hashed.len());
         let mut storages = HashMap::with_capacity(hashed.len());
         for (address, (account, storage)) in hashed {
+            println!("Show from_bundle state. address: {:?}, account: {:?}, storage: {:?}", address, account.unwrap(), storage.storage);
             accounts.insert(address, account);
             storages.insert(address, storage);
         }
