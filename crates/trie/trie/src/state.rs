@@ -38,6 +38,7 @@ impl HashedPostState {
         let hashed = state
             .into_par_iter()
             .map(|(address, account)| {
+                println!("print before hash address: {:?}", address);
                 let hashed_address = keccak256(address);
                 let hashed_account = account.info.clone().map(Into::into);
                 let hashed_storage = HashedStorage::from_iter(
