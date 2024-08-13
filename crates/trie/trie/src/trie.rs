@@ -241,8 +241,10 @@ where
         while let Some(node) = account_node_iter.try_next()? {
             match node {
                 TrieElement::Branch(node) => {
+                    println!("show branch node. key: {:?}, value: {:?}, child_bool: {:?}", node.key, node.value, node.children_are_in_trie);
                     tracker.inc_branch();
                     hash_builder.add_branch(node.key, node.value, node.children_are_in_trie);
+                    hash_builder.print_stack();
                 }
                 TrieElement::Leaf(hashed_address, account) => {
                     tracker.inc_leaf();

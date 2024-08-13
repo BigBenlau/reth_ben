@@ -88,6 +88,7 @@ where
         loop {
             // If the walker has a key...
             if let Some(key) = self.walker.key() {
+                println!("node_iter.rs If the walker has a key... key is {:?}", key);
                 // Check if the current walker key is unchecked and there's no previous hashed key
                 if !self.current_walker_key_checked && self.previous_hashed_key.is_none() {
                     self.current_walker_key_checked = true;
@@ -104,6 +105,7 @@ where
 
             // If there's a hashed entry...
             if let Some((hashed_key, value)) = self.current_hashed_entry.take() {
+                println!("node_iter.rs If there's a hashed entry... (through hashed db) key is {:?}. value is {:?}", hashed_key, value);
                 // If the walker's key is less than the unpacked hashed key,
                 // reset the checked status and continue
                 if self.walker.key().map_or(false, |key| key < &Nibbles::unpack(hashed_key)) {
@@ -119,6 +121,7 @@ where
             // Handle seeking and advancing based on the previous hashed key
             match self.previous_hashed_key.take() {
                 Some(hashed_key) => {
+                    println!("node_iter.rs Seen in previous_hashed_key. key is {:?}", hashed_key);
                     // Seek to the previous hashed key and get the next hashed entry
                     self.hashed_cursor.seek(hashed_key)?;
                     self.current_hashed_entry = self.hashed_cursor.next()?;
@@ -130,7 +133,9 @@ where
                         Some(key) => key,
                         None => break, // no more keys
                     };
+                    println!("node_iter.rs Use walker. Print seek_key is {:?}", seek_key);
                     self.current_hashed_entry = self.hashed_cursor.seek(seek_key)?;
+                    println!("node_iter.rs Print current_hashed_entry result is {:?}", self.current_hashed_entry);
                     self.walker.advance()?;
                 }
             }
