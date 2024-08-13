@@ -206,6 +206,7 @@ where
     }
 
     fn calculate(self, retain_updates: bool) -> Result<StateRootProgress, StateRootError> {
+        println!("trie.rs start calculating");
         trace!(target: "trie::state_root", "calculating state root");
         let mut tracker = TrieTracker::default();
         let mut trie_updates = TrieUpdates::default();
@@ -324,6 +325,7 @@ where
         #[cfg(feature = "metrics")]
         self.metrics.state_trie.record(stats);
 
+        println!("show state root states: {:?}", stats);
         trace!(
             target: "trie::state_root",
             %root,
