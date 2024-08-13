@@ -247,6 +247,7 @@ where
                     hash_builder.print_stack();
                 }
                 TrieElement::Leaf(hashed_address, account) => {
+                    println!("show leaf node. hashed_address: {:?}. account: {:?}", hashed_address, account);
                     tracker.inc_leaf();
                     hashed_entries_walked += 1;
 
