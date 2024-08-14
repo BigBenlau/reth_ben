@@ -166,11 +166,14 @@ impl<C: TrieCursor> TrieWalker<C> {
             assert!(!node.state_mask.is_empty());
         }
 
+        println!("walker in node(), key is {:?}, entyr is {:?}", key, entry);
+
         Ok(entry)
     }
 
     /// Consumes the next node in the trie, updating the stack.
     fn consume_node(&mut self) -> Result<(), DatabaseError> {
+        println!("walker start consumer node.");
         let Some((key, node)) = self.node(false)? else {
             // If no next node is found, clear the stack.
             self.stack.clear();
