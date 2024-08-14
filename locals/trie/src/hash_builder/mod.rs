@@ -232,10 +232,13 @@ impl HashBuilder {
             trace!(target: "trie::hash_builder", ?short_node_key);
 
             // Concatenate the 2 nodes together
+            println!("hash builder show build_extensions: {:?}", build_extensions);
             if !build_extensions {
+                println!("hash builder print self.value: {:?}", self.value);
                 match &self.value {
                     HashBuilderValue::Bytes(leaf_value) => {
                         let leaf_node = LeafNodeRef::new(&short_node_key, leaf_value);
+                        println!("hash builder pushing leaf node. leaf node is {:?}", leaf_node);
                         trace!(target: "trie::hash_builder", ?leaf_node, "pushing leaf node");
                         trace!(target: "trie::hash_builder", rlp = {
                             self.rlp_buf.clear();
@@ -248,6 +251,7 @@ impl HashBuilder {
                     }
                     HashBuilderValue::Hash(hash) => {
                         trace!(target: "trie::hash_builder", ?hash, "pushing branch node hash");
+                        println!("hash builder pushing branch node hash. bench node hash is {:?}", hash);
                         self.stack.push(word_rlp(hash));
 
                         if self.stored_in_database {
@@ -260,7 +264,10 @@ impl HashBuilder {
                         build_extensions = true;
                     }
                 }
+                println!("hash builder print self.stack after not build_extensions!");
+                self.print_stack();
             }
+
 
             if build_extensions && !short_node_key.is_empty() {
                 self.update_masks(&current, len_from);
@@ -293,6 +300,7 @@ impl HashBuilder {
                 self.store_branch_node(&current, len, children);
             }
 
+            println!("hash builder print len {:?}", len);
             self.groups.resize(len, TrieMask::default());
             self.resize_masks(len);
 
@@ -310,6 +318,9 @@ impl HashBuilder {
             }
 
             build_extensions = true;
+
+            println!("hash builder print current root: ");
+            self.current_root();
 
             i += 1;
         }
