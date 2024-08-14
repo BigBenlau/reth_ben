@@ -108,10 +108,9 @@ where
             // If there's a hashed entry...
             if let Some((hashed_key, value)) = self.current_hashed_entry.take() {
                 println!("node_iter.rs If there's a hashed entry... (through hashed db) key is {:?}. value is {:?}", hashed_key, value);
-                println!("walker print stack:");
-                self.walker.print_stack();
                 // If the walker's key is less than the unpacked hashed key,
                 // reset the checked status and continue
+                println!("show walker.key: {:?} and the hashed_key: {:?}", self.walker.key(), &Nibbles::unpack(hashed_key));
                 if self.walker.key().map_or(false, |key| key < &Nibbles::unpack(hashed_key)) {
                     self.current_walker_key_checked = false;
                     continue
