@@ -244,7 +244,6 @@ where
                     println!("show branch node. key: {:?}, value: {:?}, child_bool: {:?}", node.key, node.value, node.children_are_in_trie);
                     tracker.inc_branch();
                     hash_builder.add_branch(node.key, node.value, node.children_are_in_trie);
-                    hash_builder.print_stack();
                 }
                 TrieElement::Leaf(hashed_address, account) => {
                     println!("show leaf node. hashed_address: {:?}. account: {:?}", hashed_address, account);

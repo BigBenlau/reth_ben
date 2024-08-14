@@ -264,7 +264,7 @@ impl HashBuilder {
                         build_extensions = true;
                     }
                 }
-                println!("hash builder print self.stack after not build_extensions!");
+                println!("hash builder print self.stack after not build_extensions:");
                 self.print_stack();
             }
 
@@ -288,6 +288,7 @@ impl HashBuilder {
 
             if preceding_len <= common_prefix_len && !succeeding.is_empty() {
                 trace!(target: "trie::hash_builder", "no common prefix to create branch nodes from, returning");
+                println!("hash builder no common prefix to create branch nodes from, returning");
                 return;
             }
 

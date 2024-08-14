@@ -137,6 +137,7 @@ impl<C: TrieCursor> TrieWalker<C> {
     /// * `Result<Option<Nibbles>, Error>` - The next key in the trie or an error.
     pub fn advance(&mut self) -> Result<Option<Nibbles>, DatabaseError> {
         if let Some(last) = self.stack.last() {
+            println!("walker advance() print last: {:?}, self.can_skip_current_node: {:?}, self.children_are_in_trie(): {:?}", last, self.can_skip_current_node, self.children_are_in_trie());
             if !self.can_skip_current_node && self.children_are_in_trie() {
                 // If we can't skip the current node and the children are in the trie,
                 // either consume the next node or move to the next sibling.
