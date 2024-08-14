@@ -375,7 +375,7 @@ alloy-primitives = "0.7.2"
 alloy-dyn-abi = "0.7.2"
 alloy-sol-types = "0.7.2"
 alloy-rlp = "0.3.4"
-alloy-trie = "0.4"
+alloy-trie = { path = "locals/trie" }
 alloy-rpc-types = { version = "=0.1.3", default-features = false, features = [
     "eth",
 ] }

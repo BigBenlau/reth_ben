@@ -1,0 +1,63 @@
+[package]
+name = "alloy-trie"
+version = "0.4.1"
+authors = [
+    "rkrasiuk <rokrassyuk@gmail.com>",
+    "gakonst <me@gakonst.com>",
+    "DaniPopes <57450786+DaniPopes@users.noreply.github.com>",
+]
+description = """
+Fast Merkle-Patricia Trie (MPT) state root calculator
+and proof generator for prefix-sorted nibbles
+"""
+edition = "2021"
+rust-version = "1.66"
+license = "MIT OR Apache-2.0"
+categories = ["data-structures", "no-std"]
+keywords = ["nibbles", "trie", "mpt", "merkle", "ethereum"]
+homepage = "https://github.com/alloy-rs/trie"
+repository = "https://github.com/alloy-rs/trie"
+exclude = [".github/", "deny.toml", "release.toml", "rustfmt.toml"]
+
+[dependencies]
+alloy-primitives = { version = "0.7", default-features = false, features = ["rlp"] }
+alloy-rlp = { version = "0.3", default-features = false, features = ["derive"] }
+derive_more = "0.99"
+hashbrown = { version = "0.14", features = ["ahash", "inline-more"] }
+nybbles = { version = "0.2", default-features = false }
+smallvec = { version = "1.0", default-features = false, features = ["const_new"] }
+tracing = { version = "0.1", default-features = false }
+
+# serde
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+
+# arbitrary
+arbitrary = { version = "1.3", optional = true }
+derive_arbitrary = { version = "1.3", optional = true }
+proptest = { version = "1.5", optional = true }
+proptest-derive = { version = "0.5", optional = true }
+
+[dev-dependencies]
+hash-db = "0.15"
+plain_hasher = "0.2"
+triehash = "0.8.4"
+criterion = "0.5"
+
+[features]
+default = ["std"]
+std = ["alloy-primitives/std", "alloy-rlp/std", "nybbles/std", "tracing/std", "serde?/std"]
+serde = ["dep:serde", "alloy-primitives/serde", "hashbrown/serde", "nybbles/serde"]
+arbitrary = [
+    "std",
+    "dep:arbitrary",
+    "dep:derive_arbitrary",
+    "dep:proptest",
+    "dep:proptest-derive",
+    "alloy-primitives/arbitrary",
+    "nybbles/arbitrary",
+]
+
+[[bench]]
+name = "bench"
+harness = false
+required-features = ["arbitrary"]
