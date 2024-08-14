@@ -165,20 +165,25 @@ impl HashBuilder {
     /// that the top of the stack always contains the merkle root corresponding to the trie
     /// built so far.
     fn update(&mut self, succeeding: &Nibbles) {
+        println!("start hasher update. succeeding is {:?}", succeeding);
         let mut build_extensions = false;
         // current / self.key is always the latest added element in the trie
         let mut current = self.key.clone();
+        println!("hash builder current is {:?}", current);
 
         trace!(target: "trie::hash_builder", ?current, ?succeeding, "updating merkle tree");
 
         let mut i = 0usize;
         loop {
+            println!("\nhash builder current loop round is {:?}", i);
             let _span = tracing::trace_span!(target: "trie::hash_builder", "loop", i, ?current, build_extensions).entered();
 
             let preceding_exists = !self.groups.is_empty();
             let preceding_len = self.groups.len().saturating_sub(1);
+            println!("hash builder preceding_len is {:?}", preceding_len);
 
             let common_prefix_len = succeeding.common_prefix_length(current.as_slice());
+            println!("hash builder common_prefix_len is {:?}", common_prefix_len);
             let len = cmp::max(preceding_len, common_prefix_len);
             assert!(len < current.len());
 
@@ -193,12 +198,15 @@ impl HashBuilder {
 
             // Adjust the state masks for branch calculation
             let extra_digit = current[len];
+            println!("hash builder print self.groups: {:?}, extra_digit: {:?}", self.groups, extra_digit);
             if self.groups.len() <= len {
                 let new_len = len + 1;
                 trace!(target: "trie::hash_builder", new_len, old_len = self.groups.len(), "scaling state masks to fit");
                 self.groups.resize(new_len, TrieMask::default());
             }
+            println!("hash builder print self.groups: {:?}", self.groups);
             self.groups[len] |= TrieMask::from_nibble(extra_digit);
+            println!("hash builder print self.groups: {:?}", self.groups);
             trace!(
                 target: "trie::hash_builder",
                 ?extra_digit,
@@ -206,6 +214,7 @@ impl HashBuilder {
             );
 
             // Adjust the tree masks for exporting to the DB
+            println!("hash builder show self.tree_masks: {:?} and its len: {:?}", self.tree_masks, self.tree_masks.len());
             if self.tree_masks.len() < current.len() {
                 self.resize_masks(current.len());
             }
@@ -214,10 +223,12 @@ impl HashBuilder {
             if !succeeding.is_empty() || preceding_exists {
                 len_from += 1;
             }
+            println!("hash builder skipping {len_from} nibbles");
             trace!(target: "trie::hash_builder", "skipping {len_from} nibbles");
 
             // The key without the common prefix
             let short_node_key = current.slice(len_from..);
+            println!("hash builder show short_node_key: {:?}", short_node_key);
             trace!(target: "trie::hash_builder", ?short_node_key);
 
             // Concatenate the 2 nodes together
