@@ -166,7 +166,7 @@ impl<C: TrieCursor> TrieWalker<C> {
             assert!(!node.state_mask.is_empty());
         }
 
-        println!("walker in node(), key is {:?}, entyr is {:?}", key, entry);
+        println!("walker in node(), key is {:?}, entry is {:?}", self.key(), entry);
 
         Ok(entry)
     }
