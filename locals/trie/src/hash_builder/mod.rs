@@ -320,8 +320,7 @@ impl HashBuilder {
 
             build_extensions = true;
 
-            println!("hash builder print current root: ");
-            self.current_root();
+            println!("hash builder print current root: {:?}", self.current_root());
 
             i += 1;
         }
