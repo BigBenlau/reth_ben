@@ -234,7 +234,8 @@ where
 
         let mut fetch_block_duration = Duration::default();
         let mut execution_duration = Duration::default();
-        debug!(target: "sync::stages::execution", start = start_block, end = max_block, "Executing range");
+        // debug!(target: "sync::stages::execution", start = start_block, end = max_block, "Executing range");
+        info!(target: "sync::stages::execution", start = start_block, end = max_block, "Executing range");
 
         // Execute block range
         let mut cumulative_gas = 0;
@@ -305,7 +306,7 @@ where
         let write_preparation_duration = time.elapsed();
 
         // log the gas per second for the range we just executed
-        debug!(
+        info!(
             target: "sync::stages::execution",
             start = start_block,
             end = stage_progress,
