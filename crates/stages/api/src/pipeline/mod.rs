@@ -131,6 +131,7 @@ where
     pub fn run_as_fut(mut self, target: Option<PipelineTarget>) -> PipelineFut<DB> {
         // TODO: fix this in a follow up PR. ideally, consensus engine would be responsible for
         // updating metrics.
+        info!(target: "ben_start_pipeline", ?target, "Run run_as_fut");
         let _ = self.register_metrics(); // ignore error
         Box::pin(async move {
             // NOTE: the tip should only be None if we are in continuous sync mode.
