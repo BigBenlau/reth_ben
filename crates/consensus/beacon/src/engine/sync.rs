@@ -280,6 +280,8 @@ where
                 // outdated (included in the range the pipeline is syncing anyway)
                 self.clear_block_download_requests();
 
+                println!("show try_spawn_pipeline finished.");
+
                 Some(EngineSyncEvent::PipelineStarted(Some(target)))
             }
             PipelineState::Running(_) => None,
@@ -290,6 +292,7 @@ where
     pub(crate) fn poll(&mut self, cx: &mut Context<'_>) -> Poll<EngineSyncEvent> {
         // try to spawn a pipeline if a target is set
         if let Some(event) = self.try_spawn_pipeline() {
+            println!("show before Poll::Ready(event).");
             return Poll::Ready(event)
         }
 
