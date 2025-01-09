@@ -306,6 +306,7 @@ where
         let write_preparation_duration = time.elapsed();
 
         // log the gas per second for the range we just executed
+        // debug!(
         info!(
             target: "sync::stages::execution",
             start = start_block,
@@ -343,7 +344,9 @@ where
             OriginalValuesKnown::Yes,
         )?;
         let db_write_duration = time.elapsed();
-        debug!(
+
+        // debug!(
+        info!(
             target: "sync::stages::execution",
             block_fetch = ?fetch_block_duration,
             execution = ?execution_duration,
