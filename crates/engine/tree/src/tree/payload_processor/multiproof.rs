@@ -162,7 +162,7 @@ impl ProofSequencer {
 
         // return early if we don't have the next expected proof
         if !self.pending_proofs.contains_key(&self.next_to_deliver) {
-            return Vec::new()
+            return Vec::new();
         }
 
         let mut consecutive_proofs = Vec::with_capacity(self.pending_proofs.len());
@@ -385,7 +385,7 @@ where
                 "No proof targets, sending empty multiproof back immediately"
             );
             input.send_empty_proof();
-            return
+            return;
         }
 
         if self.inflight >= self.max_concurrent {
@@ -715,15 +715,15 @@ where
         let all_proofs_processed =
             proofs_processed >= state_update_proofs_requested + prefetch_proofs_requested;
         let no_pending = !self.proof_sequencer.has_pending();
-        debug!(
-            target: "engine::root",
-            proofs_processed,
-            state_update_proofs_requested,
-            prefetch_proofs_requested,
-            no_pending,
-            updates_finished,
-            "Checking end condition"
-        );
+        // debug!(
+        //     target: "engine::root",
+        //     proofs_processed,
+        //     state_update_proofs_requested,
+        //     prefetch_proofs_requested,
+        //     no_pending,
+        //     updates_finished,
+        //     "Checking end condition"
+        // );
         all_proofs_processed && no_pending && updates_finished
     }
 
@@ -757,7 +757,7 @@ where
             let Some(fetched_storage) = self.fetched_proof_targets.get(hashed_address) else {
                 // this means the account has not been fetched yet, so we must fetch everything
                 // associated with this account
-                continue
+                continue;
             };
 
             let prev_target_storage_len = target_storage.len();
@@ -963,7 +963,7 @@ where
                                 target: "engine::root",
                                 "State updates finished and all proofs processed, ending calculation"
                             );
-                            break
+                            break;
                         }
                     }
                     MultiProofMessage::EmptyProof { sequence_number, state } => {
@@ -988,7 +988,7 @@ where
                                 target: "engine::root",
                                 "State updates finished and all proofs processed, ending calculation"
                             );
-                            break
+                            break;
                         }
                     }
                     MultiProofMessage::ProofCalculated(proof_calculated) => {
@@ -1003,12 +1003,12 @@ where
                             .proof_calculation_duration_histogram
                             .record(proof_calculated.elapsed);
 
-                        debug!(
-                            target: "engine::root",
-                            sequence = proof_calculated.sequence_number,
-                            total_proofs = proofs_processed,
-                            "Processing calculated proof"
-                        );
+                        // debug!(
+                        //     target: "engine::root",
+                        //     sequence = proof_calculated.sequence_number,
+                        //     total_proofs = proofs_processed,
+                        //     "Processing calculated proof"
+                        // );
 
                         self.multiproof_manager.on_calculation_complete();
 
@@ -1027,7 +1027,7 @@ where
                             debug!(
                                 target: "engine::root",
                                 "State updates finished and all proofs processed, ending calculation");
-                            break
+                            break;
                         }
                     }
                     MultiProofMessage::ProofCalculationError(err) => {
@@ -1036,7 +1036,7 @@ where
                             ?err,
                             "proof calculation error"
                         );
-                        return
+                        return;
                     }
                 },
                 Err(_) => {

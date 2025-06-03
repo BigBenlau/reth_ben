@@ -142,7 +142,7 @@ where
         let Some(proof_task_tx) = self.get_or_create_tx()? else {
             // if there are no txs available, requeue the proof task
             self.pending_tasks.push_front(task);
-            return Ok(())
+            return Ok(());
         };
 
         let tx_sender = self.tx_sender.clone();
@@ -234,11 +234,11 @@ where
         result_sender: Sender<StorageProofResult>,
         tx_sender: Sender<ProofTaskMessage<Tx>>,
     ) {
-        debug!(
-            target: "trie::proof_task",
-            hashed_address=?input.hashed_address,
-            "Starting storage proof task calculation"
-        );
+        // debug!(
+        //     target: "trie::proof_task",
+        //     hashed_address=?input.hashed_address,
+        //     "Starting storage proof task calculation"
+        // );
 
         let (trie_cursor_factory, hashed_cursor_factory) = self.create_factories();
 
@@ -254,14 +254,14 @@ where
         .storage_multiproof(input.target_slots)
         .map_err(|e| ParallelStateRootError::Other(e.to_string()));
 
-        debug!(
-            target: "trie::proof_task",
-            hashed_address=?input.hashed_address,
-            prefix_set = ?input.prefix_set.len(),
-            target_slots = ?target_slots_len,
-            proof_time = ?proof_start.elapsed(),
-            "Completed storage proof task calculation"
-        );
+        // debug!(
+        //     target: "trie::proof_task",
+        //     hashed_address=?input.hashed_address,
+        //     prefix_set = ?input.prefix_set.len(),
+        //     target_slots = ?target_slots_len,
+        //     proof_time = ?proof_start.elapsed(),
+        //     "Completed storage proof task calculation"
+        // );
 
         // send the result back
         if let Err(error) = result_sender.send(result) {
