@@ -173,11 +173,11 @@ where
         );
         let storage_root_targets_len = storage_root_targets.len();
 
-        debug!(
-            target: "trie::parallel_proof",
-            total_targets = storage_root_targets_len,
-            "Starting parallel proof generation"
-        );
+        // debug!(
+        //     target: "trie::parallel_proof",
+        //     total_targets = storage_root_targets_len,
+        //     "Starting parallel proof generation"
+        // );
 
         // Pre-calculate storage roots for accounts which were changed.
         tracker.set_precomputed_storage_roots(storage_root_targets_len as u64);
@@ -305,16 +305,16 @@ where
             (HashMap::default(), HashMap::default())
         };
 
-        debug!(
-            target: "trie::parallel_proof",
-            total_targets = storage_root_targets_len,
-            duration = ?stats.duration(),
-            branches_added = stats.branches_added(),
-            leaves_added = stats.leaves_added(),
-            missed_leaves = stats.missed_leaves(),
-            precomputed_storage_roots = stats.precomputed_storage_roots(),
-            "Calculated proof"
-        );
+        // debug!(
+        //     target: "trie::parallel_proof",
+        //     total_targets = storage_root_targets_len,
+        //     duration = ?stats.duration(),
+        //     branches_added = stats.branches_added(),
+        //     leaves_added = stats.leaves_added(),
+        //     missed_leaves = stats.missed_leaves(),
+        //     precomputed_storage_roots = stats.precomputed_storage_roots(),
+        //     "Calculated proof"
+        // );
 
         Ok(MultiProof { account_subtree, branch_node_hash_masks, branch_node_tree_masks, storages })
     }
