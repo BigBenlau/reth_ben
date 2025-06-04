@@ -32,6 +32,8 @@ use revm_primitives::{
     BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState,
 };
 
+use std::time::Instant;
+
 #[cfg(not(feature = "std"))]
 use alloc::{sync::Arc, vec, vec::Vec};
 
@@ -147,6 +149,7 @@ where
     where
         DB: Database<Error = ProviderError>,
     {
+        let apply_pre_execution_changes_time = Instant::now();
         // apply pre execution changes
         apply_beacon_root_contract_call(
             &self.chain_spec,
@@ -163,19 +166,28 @@ where
             block.parent_hash,
         )?;
 
+        let apply_pre_execution_changes_duration = apply_pre_execution_changes_time.elapsed();
+        println!(
+            "apply_pre_execution_changes_duration: {:?}",
+            apply_pre_execution_changes_duration
+        );
+
         // execute transactions
         let mut cumulative_gas_used = 0;
         let mut receipts = Vec::with_capacity(block.body.len());
+        let execute_transaction_start_time = Instant::now();
+        let mut count = 0;
         for (sender, transaction) in block.transactions_with_sender() {
             // The sum of the transaction’s gas limit, Tg, and the gas utilized in this block prior,
             // must be no greater than the block’s gasLimit.
+
             let block_available_gas = block.header.gas_limit - cumulative_gas_used;
             if transaction.gas_limit() > block_available_gas {
                 return Err(BlockValidationError::TransactionGasLimitMoreThanAvailableBlockGas {
                     transaction_gas_limit: transaction.gas_limit(),
                     block_available_gas,
                 }
-                .into())
+                .into());
             }
 
             EvmConfig::fill_tx_env(evm.tx_mut(), transaction, *sender);
@@ -192,6 +204,12 @@ where
 
             // append gas used
             cumulative_gas_used += result.gas_used();
+            let execute_transaction_duration = execute_transaction_start_time.elapsed();
+            println!(
+                "count: {:?}, execute_transaction_duration: {:?}",
+                count, execute_transaction_duration
+            );
+            count += 1;
 
             // Push transaction changeset and calculate header bloom filter for receipt.
             receipts.push(
@@ -293,10 +311,18 @@ where
         total_difficulty: U256,
     ) -> Result<EthExecuteOutput, BlockExecutionError> {
         // 1. prepare state on new block
+        let on_new_block_time = Instant::now();
         self.on_new_block(&block.header);
 
+        let on_new_block_duration = on_new_block_time.elapsed();
+        println!("on_new_block_duration: {:?}", on_new_block_duration);
+
         // 2. configure the evm and execute
+        let evm_env_for_block_time = Instant::now();
         let env = self.evm_env_for_block(&block.header, total_difficulty);
+        let evm_env_for_block_duration = evm_env_for_block_time.elapsed();
+        println!("evm_env_for_block_duration: {:?}", evm_env_for_block_duration);
+
         let output = {
             let evm = self.executor.evm_config.evm_with_env(&mut self.state, env);
             self.executor.execute_state_transitions(block, evm)
