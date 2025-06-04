@@ -169,7 +169,7 @@ where
         let apply_pre_execution_changes_duration = apply_pre_execution_changes_time.elapsed();
         println!(
             "apply_pre_execution_changes_duration: {:?}",
-            apply_pre_execution_changes_duration
+            apply_pre_execution_changes_duration.as_secs_f64()
         );
 
         // execute transactions
@@ -207,7 +207,8 @@ where
             let execute_transaction_duration = execute_transaction_start_time.elapsed();
             println!(
                 "count: {:?}, execute_transaction_duration: {:?}",
-                count, execute_transaction_duration
+                count,
+                execute_transaction_duration.as_secs_f64()
             );
             count += 1;
 
@@ -311,18 +312,10 @@ where
         total_difficulty: U256,
     ) -> Result<EthExecuteOutput, BlockExecutionError> {
         // 1. prepare state on new block
-        let on_new_block_time = Instant::now();
         self.on_new_block(&block.header);
 
-        let on_new_block_duration = on_new_block_time.elapsed();
-        println!("on_new_block_duration: {:?}", on_new_block_duration);
-
         // 2. configure the evm and execute
-        let evm_env_for_block_time = Instant::now();
         let env = self.evm_env_for_block(&block.header, total_difficulty);
-        let evm_env_for_block_duration = evm_env_for_block_time.elapsed();
-        println!("evm_env_for_block_duration: {:?}", evm_env_for_block_duration);
-
         let output = {
             let evm = self.executor.evm_config.evm_with_env(&mut self.state, env);
             self.executor.execute_state_transitions(block, evm)
